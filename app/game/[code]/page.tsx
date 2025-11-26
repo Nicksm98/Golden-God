@@ -71,7 +71,7 @@ function createLobbySubscriber(
           }
         }
         reloadTimer = null;
-      }, 150); // 150ms debounce to batch rapid updates
+      }, 300); // 300ms debounce to batch rapid updates
     });
     channel.subscribe((status: string) => {
       console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
@@ -360,13 +360,22 @@ function GamePage() {
 
     if (lobby.active_prompt) {
       const prompt = lobby.active_prompt as unknown as Record<string, unknown>;
-      setActivePrompt({
-        type: prompt.type,
-        card_code: prompt.card_code,
-        drawnBy: (prompt.drawn_by || prompt.drawnBy),
-        data: prompt.data,
-        confirmed_players: prompt.confirmed_players,
-      } as ActivePrompt);
+      const promptDrawer = (prompt.drawn_by || prompt.drawnBy) as string;
+      const currentPlayerName = players.find(p => p.id === currentPlayerId)?.name;
+      
+      // Only set active prompt if we're not the drawer with an open drawn card modal
+      // This prevents duplicate modals for the player who drew the card
+      const isDrawerWithModal = currentPlayerName === promptDrawer && drawnCard !== null;
+      
+      if (!isDrawerWithModal) {
+        setActivePrompt({
+          type: prompt.type,
+          card_code: prompt.card_code,
+          drawnBy: promptDrawer,
+          data: prompt.data,
+          confirmed_players: prompt.confirmed_players,
+        } as ActivePrompt);
+      }
     } else {
       setActivePrompt(null);
     }
@@ -395,7 +404,7 @@ function GamePage() {
         player2: lobby.mate.player2,
       });
     }
-  }, [lobby]);
+  }, [lobby, currentPlayerId, drawnCard, players]);
 
   useEffect(() => {
     if (lobby?.current_player_id === currentPlayerId && currentPlayerId) {
