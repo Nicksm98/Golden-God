@@ -8,7 +8,8 @@ function createLobbySubscriber(
   supabase: SupabaseClient,
   lobbyId: string,
   applyLobbyUpdate: (data: unknown) => void,
-  setPlayersCallback?: (players: Player[]) => void
+  setPlayersCallback?: (players: Player[]) => void,
+  onReady?: () => void
 ) {
   const topic = `room:${lobbyId}`;
   let channel: ReturnType<SupabaseClient['channel']> | null = null;
@@ -78,6 +79,10 @@ function createLobbySubscriber(
       if (status === 'SUBSCRIBED') {
         attempts = 0;
         if (backoffTimer) { clearTimeout(backoffTimer); backoffTimer = null; }
+        if (onReady) {
+          console.debug('[SUBSCRIPTION] Calling onReady callback');
+          onReady();
+        }
       }
       if (status === 'CLOSED' || status === 'TIMED_OUT' || status === 'ERROR') {
         if (isUnsubscribing) return;
@@ -292,6 +297,7 @@ function GamePage() {
   const [showRules, setShowRules] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [drawnCard, setDrawnCard] = useState<DrawnCard | null>(null);
+  const [subscriptionReady, setSubscriptionReady] = useState<boolean>(false);
 
   const [activePrompt, setActivePrompt] = useState<ActivePrompt | null>(null);
   const [rpsGame, setRpsGame] = useState<RPSGame | null>(null);
@@ -561,11 +567,16 @@ function GamePage() {
           setLobby(data as Lobby);
         }
       },
-      setPlayers
+      setPlayers,
+      () => {
+        console.log("[SUBSCRIPTION] Subscription ready for lobby:", lobbyId);
+        setSubscriptionReady(true);
+      }
     );
 
     return () => {
       console.log("[SUBSCRIPTION] Cleaning up broadcast subscription for lobby:", lobbyId);
+      setSubscriptionReady(false);
       subscriber.unsubscribe();
     };
   }, [lobby?.id, supabase]);
@@ -930,6 +941,29 @@ function GamePage() {
       }
         // Always trigger card action after drawing
         await handleCardAction(rank, card.code, currentPlayer.name, currentPlayerIndex);
+        
+        // If subscription isn't ready yet, force an immediate reload to ensure sync
+        if (!subscriptionReady) {
+          console.log("[FIRST CARD] Subscription not ready, forcing immediate reload");
+          setTimeout(async () => {
+            const { data: freshLobby } = await supabase
+              .from("lobbies")
+              .select("*")
+              .eq("id", lobby.id)
+              .single();
+            if (freshLobby) {
+              setLobby(freshLobby as Lobby);
+            }
+            const { data: freshPlayers } = await supabase
+              .from("players")
+              .select("*")
+              .eq("lobby_id", lobby.id)
+              .order("joined_at", { ascending: true });
+            if (freshPlayers) {
+              setPlayers(freshPlayers as Player[]);
+            }
+          }, 500); // Small delay to ensure DB writes complete
+        }
     } catch (err) {
       console.error("Error drawing card:", err);
       showToast("Failed to draw card. Please try again.", "error");
