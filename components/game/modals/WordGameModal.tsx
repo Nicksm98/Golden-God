@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import type { Player } from "@/lib/types";
 
 const ALWAYS_SUNNY_EPISODES = [
-  // season 1
   "The Gang Gets Racist",
   "Charlie Wants an Abortion",
   "Underage Drinking: A National Concern",
@@ -13,7 +12,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Gun Fever",
   "The Gang Finds a Dead Guy",
   "Charlie Got Molested",
-  // Season 2
   "Charlie Gets Crippled",
   "The Gang Goes Jihad",
   "Dennis and Dee Go on Welfare",
@@ -24,7 +22,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang Runs For Office",
   "Charlie Goes America All Over Everbody's Ass",
   "Dennis and Dee Get A New Dad",
-  // Season 3
   "The Gang Finds a Dumpster Baby",
   "The Gang Gets Invincible",
   "Dennis and Dee's Mom Is Dead",
@@ -40,7 +37,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang Gets Whacked, Part 2",
   "Bums: Making a Mess All Over the City",
   "The Gang Dances Their Asses Off",
-  // Season 4
   "Mac and Dennis: Manhunters",
   "The Gang Solves the Gas Crisis",
   "America's Next Top Paddy's Billboard Model Contest",
@@ -54,7 +50,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang Cracks the Liberty Bell",
   "The Gang Gets Extreme: Home Makeover Edition",
   "The Nightman Cometh",
-  // Season 5
   "The Gang Exploits the Mortgage Crisis",
   "The Gang Hits the Road",
   "The Great Recession",
@@ -67,7 +62,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The D.E.N.N.I.S. System",
   "Mac and Charlie Write a Movie",
   "The Gang Reignites the Rivalry",
-  // Season 6
   "Mac Fights Gay Marriage",
   "Dennis Gets Divorced",
   "The Gang Buys a Boat",
@@ -81,7 +75,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang Gets Stranded in the Woods",
   "Dee Gives Birth",
   "It's a Very Sunny Christmas",
-  // Season 7
   "Frank's Pretty Woman",
   "The Gang Goes to the Jersey Shore",
   "Frank Reynolds' Little Beauties",
@@ -95,7 +88,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Thunder Gun Express",
   "The High School Reunion",
   "The High School Reunion Part 2: The Gang's Revenge",
-  // Season 8
   "Pop-Pop: The Final Solution",
   "The Gang Recycles Their Trash",
   "The Maureen Ponderosa Wedding Massacre",
@@ -106,7 +98,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Charlie Rules the World",
   "The Gang Dines Out",
   "Reynolds vs. Reynolds: The Cereal Defense",
-  // Season 9
   "The Gang Broke Dee",
   "Gun Fever Too: Still Hot",
   "The Gang Tries Desperately to Win an Award",
@@ -117,7 +108,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Flowers For Charlie",
   "The Gang Makes Lethal Weapon 6",
   "The Gang Squashes Their Beefs",
-  // Season 10
   "The Gang Beats Boggs",
   "The Gang Group Dates",
   "Pyscho Pete Returns",
@@ -128,7 +118,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang Goes on Family Fight",
   "Frank Retires",
   "Ass Kickers United: Mac and Charlie Join a Cult",
-  // Season 11
   "Chardee MacDennis 2: Electric Boogaloo",
   "Frank Falls Out the Window",
   "The Gang Hits the Slopes",
@@ -139,7 +128,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Charlie Catches a Leprechaun",
   "The Gang Goes to Hell, Part 1",
   "The Gang Goes to Hell, Part 2",
-  // Season 12
   "The Gang Turns Black",
   "The Gang Goes to a Water Park",
   "Old Lady House: A Sitation Comedy",
@@ -150,7 +138,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang Tends Bar",
   "A Cricket's Tale",
   "Dennis' Double Life",
-  // Season 13
   "The Gang Makes Paddy's Great Again",
   "The Gang Escapes",
   "The Gang Beats Boggs: Ladies Reboot",
@@ -161,7 +148,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Charlie's Home Alone",
   "The Gang Wins the Big Game",
   "Mac Finds His Pride",
-  // Season 14
   "The Gang Gets Romantic",
   "Thunder Gun 4: Maximum Cool",
   "Dee Day",
@@ -180,7 +166,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "The Gang's Still in Ireland",
   "Dee Sinks In A Bog",
   "The Gang Carries A Corpse Up A Mountain",
-  // Season 16
   "The Gang Inflates",
   "Frank Shoots Every Member of the Gang",
   "The Gang Gets Cursed",
@@ -189,7 +174,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Risk E. Rat's Pizza and Amusement Center",
   "The Gang Goes Bowling",
   "Dennis Takes a Mental Health Day",
-  // Season 17
   "The Gang F***s Up Abbott Elementary",
   "Frank Is In a Coma",
   "Mac and Dennis Become EMTs",
@@ -198,7 +182,6 @@ const ALWAYS_SUNNY_EPISODES = [
   "Overage Drinking: A National Concern",
   "The Gang Gets Ready for Prime Time",
   "The Golden Bachelor Live",
-
 ];
 
 interface WordGame {

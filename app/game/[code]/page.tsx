@@ -15,6 +15,7 @@ function createLobbySubscriber(
   let attempts = 0;
   let backoffTimer: ReturnType<typeof setTimeout> | null = null;
   let isUnsubscribing = false;
+  let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 
   const subscribe = () => {
     if (channel && (channel as unknown as { state?: string }).state === 'SUBSCRIBED') return;
@@ -29,40 +30,48 @@ function createLobbySubscriber(
       const record = payloadObj?.record ?? payloadObj?.new ?? payloadObj?.NEW ?? payload;
       console.debug('RESOLVED DATA', record);
       
-      // Always reload fresh data from database to ensure sync
-      if (record && typeof (record as { id?: string }).id === 'string') {
-        try {
-          const recordLobbyId = (record as { id: string }).id;
-          console.debug('[BROADCAST] Reloading lobby from database:', recordLobbyId);
-          
-          // Reload lobby
-          const { data: freshLobby } = await supabase
-            .from("lobbies")
-            .select("*")
-            .eq("id", recordLobbyId)
-            .single();
-          
-          if (freshLobby) {
-            console.debug('[BROADCAST] Fresh lobby loaded:', freshLobby);
-            applyLobbyUpdate(freshLobby);
-          }
-          
-          // Reload players
-          if (setPlayersCallback) {
-            const { data: playersData } = await supabase
-              .from("players")
-              .select("*")
-              .eq("lobby_id", recordLobbyId)
-              .order("joined_at", { ascending: true });
-            if (playersData) {
-              console.debug('[BROADCAST] Fresh players loaded:', playersData.length);
-              setPlayersCallback(playersData as Player[]);
-            }
-          }
-        } catch (err) {
-          console.error('Failed to reload after broadcast', err);
-        }
+      // Debounce rapid reloads (multiple updates in quick succession)
+      if (reloadTimer) {
+        clearTimeout(reloadTimer);
       }
+      
+      reloadTimer = setTimeout(async () => {
+        // Always reload fresh data from database to ensure sync
+        if (record && typeof (record as { id?: string }).id === 'string') {
+          try {
+            const recordLobbyId = (record as { id: string }).id;
+            console.debug('[BROADCAST] Reloading lobby from database:', recordLobbyId);
+            
+            // Reload lobby
+            const { data: freshLobby } = await supabase
+              .from("lobbies")
+              .select("*")
+              .eq("id", recordLobbyId)
+              .single();
+            
+            if (freshLobby) {
+              console.debug('[BROADCAST] Fresh lobby loaded:', freshLobby);
+              applyLobbyUpdate(freshLobby);
+            }
+            
+            // Reload players
+            if (setPlayersCallback) {
+              const { data: playersData } = await supabase
+                .from("players")
+                .select("*")
+                .eq("lobby_id", recordLobbyId)
+                .order("joined_at", { ascending: true });
+              if (playersData) {
+                console.debug('[BROADCAST] Fresh players loaded:', playersData.length);
+                setPlayersCallback(playersData as Player[]);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to reload after broadcast', err);
+          }
+        }
+        reloadTimer = null;
+      }, 150); // 150ms debounce to batch rapid updates
     });
     channel.subscribe((status: string) => {
       console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
@@ -340,6 +349,14 @@ function GamePage() {
 
   useEffect(() => {
     if (!lobby) return;
+
+    console.log('[LOBBY SYNC] Lobby updated, syncing UI state', {
+      has_active_prompt: !!lobby.active_prompt,
+      has_word_game: !!lobby.word_game,
+      has_rps_game: !!lobby.rps_game,
+      current_player_id: lobby.current_player_id,
+      turn_number: lobby.turn_number
+    });
 
     if (lobby.active_prompt) {
       const prompt = lobby.active_prompt as unknown as Record<string, unknown>;
