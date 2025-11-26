@@ -1,28 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { createLobby, checkLobbyExists } from "@/lib/lobby";
 
-// Card component to display a playing card with custom character images
 const Card = ({ code }: { code: string }) => {
-  // Map card codes to character image filenames
   const cardImageMap: { [key: string]: string } = {
-    // Kings
     KS: "golden-god",
     KH: "mac",
     KC: "frank",
     KD: "charlie",
-    // Queens
     QS: "dee",
     QH: "carmen",
     QC: "maureen",
     QD: "waitress",
-    // Jacks
     JS: "uncle-jack",
     JH: "cricket",
     JC: "z",
     JD: "liam",
-    // Number cards
     "0S": "jewish-lawyer",
     "0H": "jewish-lawyer",
     "0C": "jewish-lawyer",
@@ -59,7 +56,6 @@ const Card = ({ code }: { code: string }) => {
     "2H": "margaret",
     "2C": "margaret",
     "2D": "margaret",
-    // Aces
     AS: "barbara",
     AH: "bruce",
     AC: "gino",
@@ -69,15 +65,9 @@ const Card = ({ code }: { code: string }) => {
   const imageName = cardImageMap[code] || "default";
   const imageUrl = `/${imageName}.jpg`; // Assuming images are .jpg, adjust extension if needed
 
-  // Special styling for mcpoyle-twins to show both faces
-  const isMcPoyles = imageName === "liam";
-  const objectFitClass = isMcPoyles ? "object-contain" : "object-cover";
-
-  // Extract rank and suit from code
   const rank = code.slice(0, -1); // Everything except last character
   const suitCode = code.slice(-1); // Last character
 
-  // Map suit codes to symbols
   const suitMap: { [key: string]: string } = {
     S: "♠",
     H: "♥",
@@ -88,7 +78,6 @@ const Card = ({ code }: { code: string }) => {
   const suit = suitMap[suitCode] || "";
   const displayRank = rank === "0" ? "10" : rank; // Convert 0 to 10
 
-  // Determine if suit is red or black
   const isRed = suitCode === "H" || suitCode === "D";
   const suitColor = isRed ? "text-red-600" : "text-black";
 
@@ -99,7 +88,7 @@ const Card = ({ code }: { code: string }) => {
         alt={`${imageName} card`}
         width={80}
         height={112}
-        className={`w-20 h-28 rounded-lg shadow-lg ${objectFitClass} border-2 border-gray-300 bg-white`}
+        className={`w-20 h-28 rounded-lg shadow-lg border-2 border-gray-300 bg-white`}
         unoptimized
       />
       {/* Top-left corner indicator */}
@@ -113,7 +102,6 @@ const Card = ({ code }: { code: string }) => {
           {suit}
         </span>
       </div>
-      {/* Bottom-right corner indicator (rotated) */}
       <div
         className={`absolute bottom-1 right-1 flex flex-col items-center leading-none bg-transparent px-1 ${suitColor} font-bold text-xs rotate-180`}
       >
@@ -129,14 +117,52 @@ const Card = ({ code }: { code: string }) => {
 };
 
 const Home = () => {
+  const router = useRouter();
   const [showRules, setShowRules] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleCreateLobby() {
+    setLoading(true);
+    setError("");
+
+    const { data, error: createError } = await createLobby();
+
+    if (createError || !data) {
+      setError("Failed to create lobby. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    router.push(`/lobby/${data.code}`);
+  }
+
+  async function handleJoinLobby() {
+    if (!inviteCode.trim()) {
+      setError("Please enter an invite code");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    const { exists, lobby } = await checkLobbyExists(inviteCode);
+
+    if (!exists || !lobby) {
+      setError("Lobby not found. Check the code and try again.");
+      setLoading(false);
+      return;
+    }
+
+    router.push(`/lobby/${lobby.code}`);
+  }
 
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center"
       style={{ backgroundImage: "url('/always-sunny-bg.jpg')" }}
     >
-      {/* Semi-transparent modal window */}
       <div
         className={`bg-black/40 backdrop-blur-sm rounded-lg p-8 shadow-2xl border border-white/20 max-w-md w-full transition-all ${
           showRules ? "blur-sm" : ""
@@ -146,72 +172,153 @@ const Home = () => {
           Welcome to the Home Page
         </h1>
 
-        {/* Example buttons */}
         <div className="space-y-4">
-          <button className="w-full bg-white/90 hover:bg-white text-black font-semibold py-3 px-6 rounded-lg transition-all">
-            Create Lobby
-          </button>
-          <button
+          {error && (
+            <div className="bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="w-full flex gap-2" suppressHydrationWarning>
+            <Button
+              onClick={handleCreateLobby}
+              disabled={loading}
+              className="flex-1 bg-white/90 hover:bg-white text-black font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              suppressHydrationWarning
+            >
+              {loading ? "Creating..." : "Create Lobby"}
+            </Button>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleJoinLobby()}
+              placeholder="Code"
+              className="w-[100px] min-w-0 bg-white/90 text-black font-semibold rounded-lg placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white px-3 text-center"
+              maxLength={6}
+              suppressHydrationWarning
+            />
+            <Button
+              onClick={handleJoinLobby}
+              disabled={loading}
+              className="bg-white/90 hover:bg-white text-black font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              suppressHydrationWarning
+            >
+              Join
+            </Button>
+          </div>
+          <Button
             onClick={() => setShowRules(true)}
             className="w-full bg-white/90 hover:bg-white text-black font-semibold py-3 px-6 rounded-lg transition-all"
+            suppressHydrationWarning
           >
             View Rules
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Rules Modal */}
       {showRules && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-lg p-8 shadow-2xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-3xl font-bold text-gray-900">Game Rules</h2>
-              <button
+              <Button
                 onClick={() => setShowRules(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
               >
                 ×
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-4 text-gray-700">
               <p className="text-lg font-semibold mb-4">Card Deck Rules</p>
               <div className="grid grid-cols-1 gap-4">
-                {/* 1. King of Spades */}
                 <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Card code="KS" />
                   </div>
-                  <div className="text-sm text-gray-600">TBD</div>
+                  <div className="text-sm text-gray-600">
+                    As the golden god, you may now redirect any drink penalty
+                    given to you by another player up to three times (once per
+                    round). Each time this priviledge is used, you must declare,
+                    &quot;Because I am the Golden God!&quot; If you forget to
+                    say that, you drink. Additionally if you use all three
+                    redirects, people stop paying attention to you and your
+                    self-esteem takes a swan dive into an empty pool. The game
+                    will now randomly prompt you to drink throughout the game.
+                  </div>
                 </div>
 
-                {/* 2. King of Hearts */}
                 <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Card code="KH" />
                   </div>
-                  <div className="text-sm text-gray-600">TBD</div>
+                  <div className="text-sm text-gray-600">
+                    Convinced you&apos;re the toughest person in the room you
+                    are given 5 actions to choose from throughout the game that
+                    can be used at any point during the game. Once all 5 are
+                    used, you lose your toughness and for the rest of the game
+                    you must drink double to try to regain it. Any action can be
+                    used up to 5 times but no more than 5 actions total can be
+                    used. The actions you may choose from are:
+                    <ul>
+                      <li>
+                        1. Bodyguard - Shield another player from a drink; skip
+                        their penalty
+                      </li>
+                      <li>
+                        2. Karate Demonstration - Force another player to type
+                        or act out a karate move. If refused, they drink.
+                      </li>
+                      <li>
+                        3. Confession Time - Pick any player to
+                        &quot;confess&quot; a secret, embarrassing story, or
+                        make a silly statement (app prompt). If declined, they
+                        drink.
+                      </li>
+                      <li>
+                        4. Protein Share - Assign half your drink to another
+                        player and share your gains.
+                      </li>
+                      <li>
+                        5. Challenge of Toughness - Challenge any player: you
+                        both roll virtual dice. Loser drinks double.
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
-                {/* 3. King of Clubs */}
                 <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Card code="KC" />
                   </div>
-                  <div className="text-sm text-gray-600">TBD</div>
+                  <div className="text-sm text-gray-600">
+                    You are now the world famous art critic Ongo Gablogian.
+                    Starting now you are a critique of performance art and once
+                    per round you may call out another Player to
+                    &quot;perform.&quot; They may choose to tell a joke, sing a
+                    song, do a dance(on cam), etc. If the player refuses, they
+                    drink. However, if they follow through with the request, you
+                    must drink for being &quot;moved by the art.&quot;
+                  </div>
                 </div>
 
-                {/* 4. King of Diamonds */}
                 <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Card code="KD" />
                   </div>
-                  <div className="text-sm text-gray-600">TBD</div>
+                  <div className="text-sm text-gray-600">
+                    You&apos;ve become the Dayman! You may now tag someone as
+                    the &quot;Nightman&quot; for 3 rounds. The player then must
+                    respond &quot;Dayman!&quot; every time the Charlie player
+                    says &quot;Nightman.&quot; A failure to respond results in
+                    the Nightman drinking. After 3 rounds, you may choose a new
+                    Nightman.
+                  </div>
                 </div>
 
-                {/* 5. All Queens */}
                 <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Card code="QS" />
                   </div>
                   <div className="text-sm text-gray-600">
@@ -221,51 +328,46 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 6. Jack of Spades */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div className="shrink-0">
                     <Card code="JS" />
                   </div>
                   <div className="text-sm text-gray-600">
-                    Being made fun of all the time because of your small hands,
-                    you are now a target and people may ask you to drink
-                    whenever they want. However, being a lawyer, you may negate
-                    this if you can recall the last character they pulled and
-                    name a crime that character committed in the show. Now
-                    instead of you drinking, they must
+                    <span>
+                      Because of your tiny hands, you may opt in to take a
+                      smaller drink when you&apos;re given one. You may use this
+                      action 3 times during the game and must admit &quot;My
+                      hands are too tiny for a big boy cup&quot;. You may
+                      continue to try using thie tactic but if anyone kept count
+                      and calls you out, drink double.
+                    </span>
                   </div>
                 </div>
 
-                {/* 7. Jack of Hearts */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div className="shrink-0">
                     <Card code="JH" />
                   </div>
                   <div className="text-sm text-gray-600">
-                    Being a man of faith you may choose to not drink during any
-                    card in the game up to three times. Each time you resist the
-                    temptations, it becomes harder to resist the next time until
-                    you break. If you use all three &apos;get out of jail free
-                    cards&apos; you must finish your drink in an attempt to
-                    satisfy your hunger. Once you've fallen into the depths of
-                    addiction, the game will randomly hand out drinks to you
-                    throughout the game.
+                    Being a man of faith you&apos;re given the right to deny up
+                    to three drinks during the game and must declare &quot;God
+                    says no!&quot; Once you deny three drinks, the devil starts
+                    knocking on your door; to prevent him from taking control of
+                    you, you must make a confession before every drink.
                   </div>
                 </div>
 
-                {/* 8. Jack of Clubs */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div className="shrink-0">
                     <Card code="JC" />
                   </div>
                   <div className="text-sm text-gray-600">
                     Once this card is pulled and until the end of the game, any
-                    time someone says the words "Oh shit" the gang (everyone)
-                    drinks
+                    time someone says the words &quot;Oh shit&quot; the gang
+                    (everyone) drinks
                   </div>
                 </div>
 
-                {/* 9. Jack of Diamonds */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div className="shrink-0">
                     <Card code="JD" />
@@ -273,13 +375,12 @@ const Home = () => {
                   <div className="text-sm text-gray-600">
                     Having such hatred and a terrible relationship with the
                     gang. You always feel a need to get under their skin and
-                    take on a new role titled "The Ragebaiter" You may now
-                    attempt to ragebait another player and if successful, they
-                    drink. If you fail, you drink.
+                    take on a new role titled &quot;The Ragebaiter&quot; You may
+                    now attempt to ragebait another player and if successful,
+                    they drink. If you fail, you drink.
                   </div>
                 </div>
 
-                {/* 10. 10s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div className="shrink-0">
                     <Card code="0S" />
@@ -293,7 +394,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 11. 9s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="9S" />
@@ -304,7 +404,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 12. 8s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="8S" />
@@ -315,19 +414,16 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 13. 7s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="7S" />
                   </div>
                   <div className="text-sm text-gray-600">
                     Starting with the player who drew the card, give a name of
-                    any Always Sunny Episode (ex: The Gang Goes to Ireland). The
-                    first person to fail, drinks
+                    any Always Sunny Episode. The first person to fail, drinks.
                   </div>
                 </div>
 
-                {/* 14. 6s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="6S" />
@@ -337,7 +433,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 15. 5s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="5S" />
@@ -347,7 +442,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 16. 4s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="4S" />
@@ -357,11 +451,10 @@ const Home = () => {
                     will prompt both players to make a choice, once both have
                     chosen, the game decides who wins based off of the choices.
                     (if the same both players make the same choice we reset the
-                    minigame) The players will play best 2 out of 3
+                    minigame) The players will play best 2 out of 3.
                   </div>
                 </div>
 
-                {/* 17. 3s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="3S" />
@@ -371,7 +464,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 18. 2s */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <div>
                     <Card code="2S" />
@@ -381,34 +473,32 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 19. Ace of Spades */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <Card code="AS" />
                   <div className="text-sm text-gray-600">
                     You now take on the role of Barbara Reynolds and anytime
-                    Barbara's holder is supposed to drink (from any card's
-                    action), the app rolls a virtual dice. On a roll of 4, 5, or
-                    6, they "escaped by manipulating someone else"—the drink
-                    goes to another random player chosen by the app. On a roll
-                    of 1, 2, or 3, Barbara herself drinks.
+                    Barbara&apos;s holder is supposed to drink (from any
+                    card&apos;s action), the app rolls a virtual dice. On a roll
+                    of 1, 3, or 5, they &quot;escaped by manipulating someone
+                    else&quot;—the drink goes to another random player chosen by
+                    the app. On a roll of 2, 4, or 6, Barbara herself drinks.
                   </div>
                 </div>
 
-                {/* 20. Ace of Hearts */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <Card code="AH" />
                   <div className="text-sm text-gray-600">
-                    Dennis and Dee's real father is an overwhelmingly generous
-                    guy. With taking on his persona, whenever you are assigned a
-                    drink you must "donate" an additional drink to another
-                    player. However, each time you assign a drink you must
-                    declare the reason (i.e.: "This one is for the children!" or
-                    "For homelessness!"). if you forget to declare your
-                    donation, you instead have to drink twice
+                    Dennis and Dee&apos;s real father is an overwhelmingly
+                    generous guy. With taking on his persona, whenever you are
+                    assigned a drink you must &quot;donate&quot; an additional
+                    drink to another player. However, each time you assign a
+                    drink you must declare the reason (i.e.: &quot;This one is
+                    for the children!&quot; or &quot;For homelessness!&quot;).
+                    if you forget to declare your donation, you instead have to
+                    drink twice.
                   </div>
                 </div>
 
-                {/* 21. Ace of Clubs */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <Card code="AC" />
                   <div className="text-sm text-gray-600">
@@ -422,25 +512,25 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* 22. Ace of Diamonds */}
                 <div className="grid grid-cols-[auto_1fr] gap-4 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all items-center">
                   <Card code="AD" />
                   <div className="text-sm text-gray-600">
-                    You're now the "Snail." Everyone must hiss at you
-                    ("EEEEhhhhh!") whenever you speak. If someone forgets to
-                    hiss, they drink. If you annoy everyone too much and someone
-                    says "salt the snail," you must finish your drink.
+                    You&apos;re now the &quot;Snail.&quot; Everyone must hiss at
+                    you (&quot;EEEEhhhhh!&quot;) whenever you speak. If someone
+                    forgets to hiss, they drink. If you annoy everyone too much
+                    and someone says &quot;salt the snail,&quot; you must finish
+                    your drink.
                   </div>
                 </div>
               </div>
             </div>
 
-            <button
+            <Button
               onClick={() => setShowRules(false)}
               className="mt-6 w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-all"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       )}
