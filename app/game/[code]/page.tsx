@@ -1,3 +1,38 @@
+// Broadcast subscription helper for lobby state
+function subscribeToLobbyBroadcast(lobbyId, handlePayload) {
+  const topic = `room:${lobbyId}:state`;
+  let channel = supabase.channel(topic, { config: { private: true } });
+  let reconnectAttempts = 0;
+
+  const subscribe = () => {
+    channel = supabase.channel(topic, { config: { private: true } });
+    channel.on('broadcast', { event: '*' }, ({ event, payload }) => {
+      handlePayload({ event, payload });
+    });
+    channel.subscribe((status) => {
+      console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
+      if (status === 'SUBSCRIBED') {
+        reconnectAttempts = 0;
+      } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
+        reconnectAttempts += 1;
+        const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts));
+        console.warn(`[SUBSCRIPTION] ${topic} ${status}. Reconnecting in ${delay}ms`);
+        setTimeout(() => {
+          try { supabase.removeChannel(channel); } catch (e) {}
+          subscribe();
+        }, delay);
+      }
+    });
+  };
+  subscribe();
+
+  // Return unsubscribe helper
+  return () => {
+    try { supabase.removeChannel(channel); } catch (e) {
+      console.warn('removeChannel error', e);
+    }
+  };
+}
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -415,97 +450,19 @@ function GamePage() {
     if (!lobby?.id) return;
 
     const lobbyId = lobby.id;
-    console.log("[SUBSCRIPTION] Setting up real-time subscription for lobby:", lobbyId);
+    console.log("[SUBSCRIPTION] Setting up broadcast subscription for lobby:", lobbyId);
 
-    const channel = supabase
-      .channel(`game-${lobbyId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "players",
-          filter: `lobby_id=eq.${lobbyId}`,
-        },
-        async (payload) => {
-          console.log("[REAL-TIME] Players change detected:", payload.eventType);
-          
-          if (payload.eventType === "DELETE" && payload.old.is_host) {
-            const { data: remainingPlayers } = await supabase
-              .from("players")
-              .select("*")
-              .eq("lobby_id", lobbyId)
-              .order("joined_at", { ascending: true });
-            
-            if (remainingPlayers && remainingPlayers.length > 0) {
-              await Promise.all([
-                supabase
-                  .from("players")
-                  .update({ is_host: true })
-                  .eq("id", remainingPlayers[0].id),
-                logGameEvent(lobbyId, "special_action", remainingPlayers[0].name, {
-                  action: "became the new host",
-                  message: `${remainingPlayers[0].name} is now the host`
-                })
-              ]);
-            }
-          }
-          
-          const { data: updatedPlayers } = await supabase
-            .from("players")
-            .select("*")
-            .eq("lobby_id", lobbyId)
-            .order("joined_at", { ascending: true });
-          
-          if (updatedPlayers) {
-            setPlayers(updatedPlayers);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "lobbies",
-          filter: `id=eq.${lobbyId}`,
-        },
-        (payload) => {
-          console.log("[REAL-TIME] Lobby change detected");
-          if (payload.new) {
-            const lobbyData = payload.new as unknown as Record<string, unknown>;
-            
-            console.log("[REAL-TIME UPDATE]", {
-              deck_updated: !!lobbyData.deck,
-              current_player_id: lobbyData.current_player_id,
-              turn_number: lobbyData.turn_number,
-            });
-            
-            let activePrompt = lobbyData.active_prompt as unknown as Record<string, unknown> | null;
-            if (activePrompt) {
-              activePrompt = {
-                type: activePrompt.type,
-                card_code: activePrompt.card_code,
-                drawnBy: activePrompt.drawn_by || activePrompt.drawnBy,
-                data: activePrompt.data,
-                confirmed_players: activePrompt.confirmed_players,
-              };
-            }
-            
-            setLobby({
-              ...lobbyData,
-              active_prompt: activePrompt,
-            } as Lobby);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log("[SUBSCRIPTION] Status:", status);
-      });
+    const unsubscribe = subscribeToLobbyBroadcast(lobbyId, ({ event, payload }) => {
+      // Update your lobby state with payload.NEW
+      if (payload && payload.NEW) {
+        setLobby(payload.NEW);
+      }
+      // Optionally handle payload.OLD if needed
+    });
 
     return () => {
-      console.log("[SUBSCRIPTION] Cleaning up subscription for lobby:", lobbyId);
-      supabase.removeChannel(channel);
+      console.log("[SUBSCRIPTION] Cleaning up broadcast subscription for lobby:", lobbyId);
+      unsubscribe();
     };
   }, [lobby?.id, supabase]);
 
