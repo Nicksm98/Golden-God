@@ -1,15 +1,22 @@
-// Broadcast subscription helper for lobby state
-function subscribeToLobbyBroadcast(lobbyId, handlePayload) {
+
+"use client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+function subscribeToLobbyBroadcast(
+  supabase: SupabaseClient,
+  lobbyId: string,
+  handlePayload: (data: { event: string; payload: unknown }) => void
+) {
   const topic = `room:${lobbyId}:state`;
   let channel = supabase.channel(topic, { config: { private: true } });
   let reconnectAttempts = 0;
 
   const subscribe = () => {
     channel = supabase.channel(topic, { config: { private: true } });
-    channel.on('broadcast', { event: '*' }, ({ event, payload }) => {
+    channel.on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
       handlePayload({ event, payload });
     });
-    channel.subscribe((status) => {
+    channel.subscribe((status: string) => {
       console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
       if (status === 'SUBSCRIBED') {
         reconnectAttempts = 0;
@@ -18,7 +25,7 @@ function subscribeToLobbyBroadcast(lobbyId, handlePayload) {
         const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts));
         console.warn(`[SUBSCRIPTION] ${topic} ${status}. Reconnecting in ${delay}ms`);
         setTimeout(() => {
-          try { supabase.removeChannel(channel); } catch (e) {}
+          try { supabase.removeChannel(channel); } catch {}
           subscribe();
         }, delay);
       }
@@ -26,14 +33,10 @@ function subscribeToLobbyBroadcast(lobbyId, handlePayload) {
   };
   subscribe();
 
-  // Return unsubscribe helper
   return () => {
-    try { supabase.removeChannel(channel); } catch (e) {
-      console.warn('removeChannel error', e);
-    }
+    try { supabase.removeChannel(channel); } catch {}
   };
 }
-"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -452,12 +455,10 @@ function GamePage() {
     const lobbyId = lobby.id;
     console.log("[SUBSCRIPTION] Setting up broadcast subscription for lobby:", lobbyId);
 
-    const unsubscribe = subscribeToLobbyBroadcast(lobbyId, ({ event, payload }) => {
-      // Update your lobby state with payload.NEW
-      if (payload && payload.NEW) {
-        setLobby(payload.NEW);
+    const unsubscribe = subscribeToLobbyBroadcast(supabase, lobbyId, ({ payload }: { event: string; payload: unknown }) => {
+      if (typeof payload === "object" && payload && "NEW" in payload) {
+        setLobby((payload as { NEW: Lobby }).NEW);
       }
-      // Optionally handle payload.OLD if needed
     });
 
     return () => {
