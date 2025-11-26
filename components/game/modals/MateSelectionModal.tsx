@@ -17,7 +17,6 @@ export function MateSelectionModal({
   onMateSelection,
 }: MateSelectionModalProps) {
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
-  // Handle both snake_case (from DB) and camelCase (from type)
   const promptData = activePrompt as unknown as Record<string, unknown>;
   const drawerName = (promptData.drawn_by || promptData.drawnBy) as string;
   const isCurrentPlayerDrawer = currentPlayer?.name === drawerName;

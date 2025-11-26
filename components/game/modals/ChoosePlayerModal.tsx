@@ -45,8 +45,6 @@ export function ChoosePlayerModal({
         })
         .eq("id", lobbyId);
     } else if (activePrompt.data?.action === "rps") {
-      // For RPS, advance turn immediately since game is separate from turn order
-      // Find the player who DREW the card
       const drawerPlayer = players.find((p) => p.name === drawerName);
       if (!drawerPlayer) {
         console.error("Could not find player who drew card:", drawerName);
@@ -84,7 +82,6 @@ export function ChoosePlayerModal({
   };
 
   const handleCancel = async () => {
-    // When canceling (no one chosen), advance turn from the drawer
     const drawerPlayer = players.find((p) => p.name === drawerName);
     if (!drawerPlayer) {
       console.error("Could not find player who drew card:", drawerName);

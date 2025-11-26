@@ -33,7 +33,6 @@ export function BruceDonationModal({
 
     if (!reason) return;
 
-    // Start voting process
     await supabase
       .from("lobbies")
       .update({

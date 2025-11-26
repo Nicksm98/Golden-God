@@ -45,7 +45,6 @@ export function GinoSwapTargetModal({
       
       console.log("Attempting to update with:", updateData);
       
-      // Update database - this will sync to all players
       const { data, error } = await supabase
         .from("lobbies")
         .update(updateData)
@@ -60,8 +59,6 @@ export function GinoSwapTargetModal({
       }
 
       console.log("Successfully updated target:", data);
-      // Modal will automatically hide when lobby.gino_swap_voting updates
-      // Voting modal will show for all players via real-time sync
     } catch (err) {
       console.error("Error in handleSelectTarget:", err);
       alert(`An error occurred: ${err instanceof Error ? err.message : "Unknown error"}`);

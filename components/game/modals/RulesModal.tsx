@@ -8,26 +8,20 @@ interface RulesModalProps {
   onClose: () => void;
 }
 
-// Card component to display a playing card with custom character images
 const Card = ({ code }: { code: string }) => {
-  // Map card codes to character image filenames
   const cardImageMap: { [key: string]: string } = {
-    // Kings
     KS: "golden-god",
     KH: "mac",
     KC: "frank",
     KD: "charlie",
-    // Queens
     QS: "dee",
     QH: "carmen",
     QC: "maureen",
     QD: "waitress",
-    // Jacks
     JS: "uncle-jack",
     JH: "cricket",
     JC: "z",
     JD: "liam",
-    // Number cards
     "0S": "jewish-lawyer",
     "0H": "jewish-lawyer",
     "0C": "jewish-lawyer",
@@ -64,7 +58,6 @@ const Card = ({ code }: { code: string }) => {
     "2H": "margaret",
     "2C": "margaret",
     "2D": "margaret",
-    // Aces
     AS: "barbara",
     AH: "bruce",
     AC: "gino",
@@ -74,11 +67,9 @@ const Card = ({ code }: { code: string }) => {
   const imageName = cardImageMap[code] || "default";
   const imageUrl = `/${imageName}.jpg`;
 
-  // Extract rank and suit from code
   const rank = code.slice(0, -1);
   const suitCode = code.slice(-1);
 
-  // Map suit codes to symbols
   const suitMap: { [key: string]: string } = {
     S: "♠",
     H: "♥",
@@ -89,7 +80,6 @@ const Card = ({ code }: { code: string }) => {
   const suit = suitMap[suitCode] || "";
   const displayRank = rank === "0" ? "10" : rank;
 
-  // Determine if suit is red or black
   const isRed = suitCode === "H" || suitCode === "D";
   const suitColor = isRed ? "text-red-600" : "text-black";
 
@@ -103,7 +93,6 @@ const Card = ({ code }: { code: string }) => {
         className="w-20 h-28 rounded-lg shadow-lg border-2 border-gray-300 bg-white"
         unoptimized
       />
-      {/* Top-left corner indicator */}
       <div
         className={`absolute top-1 left-1 flex flex-col items-center leading-none bg-transparent px-1 ${suitColor} font-bold text-xs`}
       >

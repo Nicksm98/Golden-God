@@ -5,7 +5,6 @@ import Image from "next/image";
 import type { DrawnCard, Lobby, Player, ActivePrompt, RPSGame } from "@/lib/types";
 import React from "react";
 
-// Card rules helper
 const getCardRules = (code: string): React.ReactNode => {
   const rules: { [key: string]: React.ReactNode } = {
     KS: <>You are now the Golden God. Redirect any drink given to you up to three times. Must declare: &quot;Because I am the Golden God!&quot; After 3 redirects, the game will randomly prompt you to drink.</>,
@@ -64,34 +63,20 @@ const getCardRules = (code: string): React.ReactNode => {
   return rules[code] || "No special rules for this card.";
 };
 
-// Card component to display a playing card
 const Card = ({ code }: { code: string }) => {
   const cardImageMap: { [key: string]: string } = {
-    // Kings
     KS: "golden-god", KH: "mac", KC: "frank", KD: "charlie",
-    // Queens
     QS: "dee", QH: "carmen", QC: "maureen", QD: "waitress",
-    // Jacks
     JS: "uncle-jack", JH: "cricket", JC: "z", JD: "liam",
-    // 10s
     "0S": "jewish-lawyer", "0H": "jewish-lawyer", "0C": "jewish-lawyer", "0D": "jewish-lawyer",
-    // 9s
     "9S": "artemis", "9H": "artemis", "9C": "artemis", "9D": "artemis",
-    // 8s
     "8S": "maniac", "8H": "maniac", "8C": "maniac", "8D": "maniac",
-    // 7s
     "7S": "country-mac", "7H": "country-mac", "7C": "country-mac", "7D": "country-mac",
-    // 6s
     "6S": "mrs-mac", "6H": "mrs-mac", "6C": "mrs-mac", "6D": "mrs-mac",
-    // 5s
     "5S": "luther", "5H": "luther", "5C": "luther", "5D": "luther",
-    // 4s
     "4S": "Bonnie", "4H": "Bonnie", "4C": "Bonnie", "4D": "Bonnie",
-    // 3s
     "3S": "old-black-man", "3H": "old-black-man", "3C": "old-black-man", "3D": "old-black-man",
-    // 2s
     "2S": "margaret", "2H": "margaret", "2C": "margaret", "2D": "margaret",
-    // Aces
     AS: "barbara", AH: "bruce", AC: "gino", AD: "gail",
   };
 
@@ -174,7 +159,6 @@ export function DrawnCardModal({
       drawnCard.playerIndex
     );
 
-    // Special handling for Dayman (KD) card - show Nightman selection
     if (drawnCard.code === "KD") {
       const currentPlayer = players.find((p) => p.id === currentPlayerId);
       if (currentPlayer?.role === "charlie") {
@@ -184,7 +168,6 @@ export function DrawnCardModal({
 
     onClose();
 
-    // Advance turn only if the card action indicated it should
     if (shouldAdvanceTurn) {
       await onAdvanceTurn();
     }

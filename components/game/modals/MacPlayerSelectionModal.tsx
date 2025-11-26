@@ -23,7 +23,6 @@ interface MacPlayerSelectionModalProps {
   onActionComplete: () => void;
 }
 
-// Helper function to generate dice roll outside component
 const rollDice = () => Math.floor(Math.random() * 6) + 1;
 
 export function MacPlayerSelectionModal({
@@ -57,7 +56,6 @@ export function MacPlayerSelectionModal({
   };
 
   const handlePlayerSelect = async (player: Player) => {
-    // Update action count and track turn
     const newUses = {
       ...macUses,
       [macPlayer.name]: usedActions + 1,
@@ -69,8 +67,6 @@ export function MacPlayerSelectionModal({
     console.log("[MAC ACTION] New mac_action_uses:", newUses);
     console.log("[MAC ACTION] Lobby ID:", lobbyId);
 
-    // Mac actions can happen any time, so use current turn player if exists, otherwise Mac
-    // This preserves turn order - when the prompt clears, turn advances from the actual turn holder
     const currentTurnPlayer = players.find((p) => p.id === lobby?.current_player_id);
     const drawnByName = currentTurnPlayer?.name || macPlayer.name;
 
@@ -131,12 +127,10 @@ export function MacPlayerSelectionModal({
         console.log("[MAC ACTION] Counter update successful");
       }
     } else if (macAction === "challenge") {
-      // Roll dice for both players using helper function to satisfy React Compiler
       const macRoll = rollDice();
       const targetRoll = rollDice();
 
       if (macRoll === targetRoll) {
-        // Tie - both drink
         const tieDrinkers = addMatesToDrinkList([macPlayer.name, player.name]);
         const { error } = await supabase
           .from("lobbies")

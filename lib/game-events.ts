@@ -38,7 +38,6 @@ export async function logGameEvent(
   }
 }
 
-// Re-export types from centralized types file
 export type { GameStats, PlayerStats };
 
 export function initializePlayerStats(playerName: string, stats: GameStats): GameStats {

@@ -63,10 +63,9 @@ const Card = ({ code }: { code: string }) => {
   };
 
   const imageName = cardImageMap[code] || "default";
-  const imageUrl = `/${imageName}.jpg`; // Assuming images are .jpg, adjust extension if needed
-
-  const rank = code.slice(0, -1); // Everything except last character
-  const suitCode = code.slice(-1); // Last character
+  const imageUrl = `/${imageName}.jpg`;
+  const rank = code.slice(0, -1); 
+  const suitCode = code.slice(-1); 
 
   const suitMap: { [key: string]: string } = {
     S: "♠",
@@ -76,7 +75,7 @@ const Card = ({ code }: { code: string }) => {
   };
 
   const suit = suitMap[suitCode] || "";
-  const displayRank = rank === "0" ? "10" : rank; // Convert 0 to 10
+  const displayRank = rank === "0" ? "10" : rank; 
 
   const isRed = suitCode === "H" || suitCode === "D";
   const suitColor = isRed ? "text-red-600" : "text-black";
@@ -91,7 +90,6 @@ const Card = ({ code }: { code: string }) => {
         className={`w-20 h-28 rounded-lg shadow-lg border-2 border-gray-300 bg-white`}
         unoptimized
       />
-      {/* Top-left corner indicator */}
       <div
         className={`absolute top-1 left-1 flex flex-col items-center leading-none bg-transparent px-1 ${suitColor} font-bold text-xs`}
       >

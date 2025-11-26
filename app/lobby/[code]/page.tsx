@@ -94,12 +94,10 @@ export default function LobbyPage() {
       return;
     }
 
-    // Check if already in localStorage - using sessionStorage for per-tab isolation
     const existingPlayerId = sessionStorage.getItem(`player-${code}`);
     console.log("Checking sessionStorage:", existingPlayerId);
     
     if (existingPlayerId) {
-      // Verify this player ID actually exists in the database for THIS lobby
       try {
         const { data: playerCheck } = await supabase
           .from("players")
@@ -131,7 +129,6 @@ export default function LobbyPage() {
     hasAttemptedJoin.current = true;
 
     try {
-      // Generate automatic name - use players.length + 1 for better naming
       const isHost = players.length === 0;
       const autoName = isHost ? "Host" : `Player ${players.length + 1}`;
       
@@ -156,12 +153,9 @@ export default function LobbyPage() {
       setCurrentPlayerId(data.id);
       setError("");
       
-      // Store player ID in sessionStorage for game page (per-tab, not shared)
       sessionStorage.setItem(`player-${code}`, data.id);
-      // Also store in localStorage as backup for game page navigation
       localStorage.setItem(`player-${code}`, data.id);
       
-      // Immediately add the new player to the list
       setPlayers((prev) => [...prev, data]);
     } catch (err) {
       console.error("Error joining lobby:", err);
@@ -175,7 +169,6 @@ export default function LobbyPage() {
     loadLobby();
   }, [loadLobby]);
 
-  // Auto-join when lobby and players are loaded
   useEffect(() => {
     if (lobby && playersLoaded && !currentPlayerId) {
       autoJoinLobby();
@@ -185,10 +178,8 @@ export default function LobbyPage() {
   useEffect(() => {
     if (!lobby) return;
 
-    // Load players initially
     loadPlayers();
 
-    // Set up real-time subscription for players and lobby status
     const channel = supabase
       .channel(`lobby-${lobby.id}`)
       .on(
@@ -215,7 +206,6 @@ export default function LobbyPage() {
         (payload) => {
           console.log("Lobby update received:", payload);
           if (payload.new && payload.new.status === "playing") {
-            // Game has started, redirect to game page
             router.push(`/game/${code}`);
           }
         }
@@ -227,7 +217,6 @@ export default function LobbyPage() {
         }
       });
 
-    // Poll for updates every 2 seconds as backup
     const pollInterval = setInterval(() => {
       loadPlayers();
     }, 2000);
@@ -284,7 +273,6 @@ export default function LobbyPage() {
     const currentPlayer = players.find((p) => p.id === currentPlayerId);
     if (!currentPlayer?.is_host) return;
 
-    // Pick random starting player
     const randomPlayer = players[Math.floor(Math.random() * players.length)];
 
     try {
@@ -297,7 +285,6 @@ export default function LobbyPage() {
         })
         .eq("id", lobby.id);
 
-      // Navigate to game page
       router.push(`/game/${code}`);
     } catch (err) {
       console.error("Error starting game:", err);
@@ -432,7 +419,6 @@ export default function LobbyPage() {
                       </>
                     )}
                   </div>
-                  {/* Gender Selection */}
                   {player.id === currentPlayerId && (
                     <div className="mt-2">
                       <p className="text-white/70 text-xs mb-1">Gender (for 5s/6s):</p>

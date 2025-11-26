@@ -51,26 +51,20 @@ import type {
   Mate,
 } from "@/lib/types";
 
-// Card component to display a playing card with custom character images
 const Card = ({ code }: { code: string }) => {
-  // Map card codes to character image filenames
   const cardImageMap: { [key: string]: string } = {
-    // Kings
     KS: "golden-god",
     KH: "mac",
     KC: "frank",
     KD: "charlie",
-    // Queens
     QS: "dee",
     QH: "carmen",
     QC: "maureen",
     QD: "waitress",
-    // Jacks
     JS: "uncle-jack",
     JH: "cricket",
     JC: "z",
     JD: "liam",
-    // Number cards
     "0S": "jewish-lawyer",
     "0H": "jewish-lawyer",
     "0C": "jewish-lawyer",
@@ -107,7 +101,6 @@ const Card = ({ code }: { code: string }) => {
     "2H": "margaret",
     "2C": "margaret",
     "2D": "margaret",
-    // Aces
     AS: "barbara",
     AH: "bruce",
     AC: "gino",
@@ -115,13 +108,11 @@ const Card = ({ code }: { code: string }) => {
   };
 
   const imageName = cardImageMap[code] || "default";
-  const imageUrl = `/${imageName}.jpg`; // Assuming images are .jpg, adjust extension if needed
+  const imageUrl = `/${imageName}.jpg`;
 
-  // Extract rank and suit from code
-  const rank = code.slice(0, -1); // Everything except last character
-  const suitCode = code.slice(-1); // Last character
+  const rank = code.slice(0, -1); 
+  const suitCode = code.slice(-1);
 
-  // Map suit codes to symbols
   const suitMap: { [key: string]: string } = {
     S: "♠",
     H: "♥",
@@ -130,9 +121,8 @@ const Card = ({ code }: { code: string }) => {
   };
 
   const suit = suitMap[suitCode] || "";
-  const displayRank = rank === "0" ? "10" : rank; // Convert 0 to 10
+  const displayRank = rank === "0" ? "10" : rank; 
 
-  // Determine if suit is red or black
   const isRed = suitCode === "H" || suitCode === "D";
   const suitColor = isRed ? "text-red-600" : "text-black";
 
@@ -146,7 +136,6 @@ const Card = ({ code }: { code: string }) => {
         className={`w-20 h-28 rounded-lg shadow-lg border-2 border-gray-300 bg-white`}
         unoptimized
       />
-      {/* Top-left corner indicator */}
       <div
         className={`absolute top-1 left-1 flex flex-col items-center leading-none bg-transparent px-1 ${suitColor} font-bold text-xs`}
       >
@@ -171,10 +160,6 @@ const Card = ({ code }: { code: string }) => {
   );
 };
 
-/**
- * Main game page component
- * Handles all game logic, real-time updates, and player interactions
- */
 function GamePage() {
   const params = useParams();
   const router = useRouter();
@@ -189,7 +174,6 @@ function GamePage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [drawnCard, setDrawnCard] = useState<DrawnCard | null>(null);
 
-  // Mini-game and prompt states
   const [activePrompt, setActivePrompt] = useState<ActivePrompt | null>(null);
   const [rpsGame, setRpsGame] = useState<RPSGame | null>(null);
   const [wordGame, setWordGame] = useState<{
@@ -228,14 +212,12 @@ function GamePage() {
   const { playSound } = useSoundEffects();
   const shamrockPositions = generateShamrockPositions();
 
-  // Helper function to add mates to drink list
   const addMatesToDrinkList = useCallback((playerNames: string[]): string[] => {
     if (!lobby?.mate) return playerNames;
     
     const { player1, player2 } = lobby.mate;
     const expandedList = [...playerNames];
     
-    // If either mate is in the list, add their partner
     if (playerNames.includes(player1) && !playerNames.includes(player2)) {
       expandedList.push(player2);
     }
@@ -246,11 +228,9 @@ function GamePage() {
     return expandedList;
   }, [lobby?.mate]);
 
-  // Sync lobby state to local state
   useEffect(() => {
     if (!lobby) return;
 
-    // Sync active prompt - convert snake_case from DB to camelCase for TypeScript
     if (lobby.active_prompt) {
       const prompt = lobby.active_prompt as unknown as Record<string, unknown>;
       setActivePrompt({
@@ -264,7 +244,6 @@ function GamePage() {
       setActivePrompt(null);
     }
 
-    // Sync word game
     if (lobby.word_game) {
       setWordGame({
         type: lobby.word_game.type as "7-episodes" | "9-rhyme" | "10-category",
@@ -277,14 +256,12 @@ function GamePage() {
       setWordGame(null);
     }
 
-    // Sync RPS game
     if (lobby.rps_game) {
       setRpsGame(lobby.rps_game);
     } else {
       setRpsGame(null);
     }
 
-    // Sync mate
     if (lobby.mate) {
       setMate({
         player1: lobby.mate.player1,
@@ -293,28 +270,23 @@ function GamePage() {
     }
   }, [lobby]);
 
-  // Play sound when it's your turn
   useEffect(() => {
     if (lobby?.current_player_id === currentPlayerId && currentPlayerId) {
       playSound("turn-chime");
     }
   }, [lobby?.current_player_id, currentPlayerId, playSound]);
 
-  // Nightman response timer
   useEffect(() => {
     const isNightmanPrompt = (activePrompt?.type as string) === "nightman-response";
     
     if (isNightmanPrompt) {
-      // Reset timer when prompt appears
       setNightmanTimer(10);
       
       const interval = setInterval(() => {
         setNightmanTimer((prev) => {
           if (prev <= 1) {
-            // Time's up - Nightman failed to respond
             clearInterval(interval);
             
-            // Auto-fail the Nightman
             if (lobby && activePrompt && activePrompt.data?.nightman) {
               console.log("[NIGHTMAN] Timer expired, creating drink prompt for:", activePrompt.data.nightman);
               const nightmanDrinkers = addMatesToDrinkList([activePrompt.data.nightman]);
@@ -339,7 +311,7 @@ function GamePage() {
                     console.error("[NIGHTMAN] Failed to create drink prompt:", error);
                   } else {
                     console.log("[NIGHTMAN] Drink prompt created successfully");
-                    playSound("error");
+                    playSound("card-flip");
                   }
                 });
             }
@@ -352,10 +324,8 @@ function GamePage() {
       
       return () => clearInterval(interval);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activePrompt?.type, lobby?.id]);
+  }, [activePrompt, lobby, addMatesToDrinkList, playSound, supabase]);
 
-  // Get player ID from sessionStorage with reconnection logic
   useEffect(() => {
     const attemptReconnect = async () => {
       const playerId =
@@ -363,7 +333,6 @@ function GamePage() {
         localStorage.getItem(`player-${code}`);
       
       if (playerId) {
-        // Verify player still exists in database
         const { data: player, error } = await supabase
           .from("players")
           .select("*")
@@ -374,7 +343,6 @@ function GamePage() {
           setCurrentPlayerId(playerId);
           console.log("Reconnected as player:", player.name);
         } else {
-          // Player no longer exists, clear storage
           sessionStorage.removeItem(`player-${code}`);
           localStorage.removeItem(`player-${code}`);
           console.warn("Player no longer exists, cleared storage");
@@ -437,14 +405,12 @@ function GamePage() {
     loadLobby();
   }, [loadLobby]);
 
-  // Load players when lobby is available
   useEffect(() => {
     if (lobby?.id) {
       loadPlayers();
     }
   }, [lobby?.id, loadPlayers]);
 
-  // Set up real-time subscriptions (stable, doesn't recreate on every lobby change)
   useEffect(() => {
     if (!lobby?.id) return;
 
@@ -464,7 +430,6 @@ function GamePage() {
         async (payload) => {
           console.log("[REAL-TIME] Players change detected:", payload.eventType);
           
-          // OPTIMIZATION: Handle host migration when host leaves
           if (payload.eventType === "DELETE" && payload.old.is_host) {
             const { data: remainingPlayers } = await supabase
               .from("players")
@@ -473,7 +438,6 @@ function GamePage() {
               .order("joined_at", { ascending: true });
             
             if (remainingPlayers && remainingPlayers.length > 0) {
-              // Batch host update and event log
               await Promise.all([
                 supabase
                   .from("players")
@@ -487,7 +451,6 @@ function GamePage() {
             }
           }
           
-          // Reload players for all clients
           const { data: updatedPlayers } = await supabase
             .from("players")
             .select("*")
@@ -510,7 +473,6 @@ function GamePage() {
         (payload) => {
           console.log("[REAL-TIME] Lobby change detected");
           if (payload.new) {
-            // Convert snake_case from DB to camelCase for TypeScript
             const lobbyData = payload.new as unknown as Record<string, unknown>;
             
             console.log("[REAL-TIME UPDATE]", {
@@ -519,7 +481,6 @@ function GamePage() {
               turn_number: lobbyData.turn_number,
             });
             
-            // Convert active_prompt if it exists
             let activePrompt = lobbyData.active_prompt as unknown as Record<string, unknown> | null;
             if (activePrompt) {
               activePrompt = {
@@ -531,7 +492,6 @@ function GamePage() {
               };
             }
             
-            // Update lobby state with all fields including deck
             setLobby({
               ...lobbyData,
               active_prompt: activePrompt,
@@ -549,8 +509,6 @@ function GamePage() {
     };
   }, [lobby?.id, supabase]);
 
-  // Handle card-specific actions
-  // Returns true if turn should advance, false if a prompt/game will handle it
   async function handleCardAction(
     rank: string,
     cardCode: string,
@@ -560,7 +518,7 @@ function GamePage() {
     if (!lobby) return false;
 
     switch (rank) {
-      case "2": // You - Choose a player to drink
+      case "2":
         await supabase
           .from("lobbies")
           .update({
@@ -572,8 +530,8 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Prompt will handle turn advancement
-      case "3": // Me - You drink
+        return false; 
+      case "3": 
         const drinkPlayers = addMatesToDrinkList([drawnBy]);
         await supabase
           .from("lobbies")
@@ -587,8 +545,8 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Prompt will handle turn advancement
-      case "4": // Rock Paper Scissors
+        return false;
+      case "4": 
         await supabase
           .from("lobbies")
           .update({
@@ -603,13 +561,12 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Prompt will handle turn advancement
-      case "5": // Guys drink (male + non-binary)
+        return false;
+      case "5":
         const malePlayerNames = players
           .filter((p) => p.gender === "male")
           .map((p) => p.name);
         
-        // Always add non-binary players - they can choose to pass or drink
         const nonBinaryPlayers = players
           .filter((p) => p.gender === "non-binary")
           .map((p) => p.name);
@@ -618,7 +575,6 @@ function GamePage() {
         
         const maleWithMates = addMatesToDrinkList(malePlayerNames);
         
-        // Always create prompt, even if no one drinks
         await supabase
           .from("lobbies")
           .update({
@@ -637,13 +593,12 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Prompt will handle turn advancement
-      case "6": // Chicks drink (female + non-binary)
+        return false; 
+      case "6":
         const femalePlayerNames = players
           .filter((p) => p.gender === "female")
           .map((p) => p.name);
         
-        // Always add non-binary players - they can choose to pass or drink
         const nonBinaryPlayersChicks = players
           .filter((p) => p.gender === "non-binary")
           .map((p) => p.name);
@@ -652,7 +607,6 @@ function GamePage() {
         
         const femaleWithMates = addMatesToDrinkList(femalePlayerNames);
         
-        // Always create prompt, even if no one drinks
         await supabase
           .from("lobbies")
           .update({
@@ -671,8 +625,8 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Prompt will handle turn advancement
-      case "7": // Episode names
+        return false; 
+      case "7": 
         await supabase
           .from("lobbies")
           .update({
@@ -685,12 +639,10 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Word game will handle turn advancement
-      case "8": // Mates
-        // Mate selection prompt is already set in drawCard() function
-        // Mate selection doesn't need to control turn - just show modal, player selects, turn advances normally
-        return true; // Advance turn normally - mate selection is just a side effect, not turn-blocking
-      case "9": // Rhyme
+        return false; 
+      case "8": 
+        return true; 
+      case "9": 
         await supabase
           .from("lobbies")
           .update({
@@ -703,8 +655,8 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Word game will handle turn advancement
-      case "0": // Categories (10)
+        return false; 
+      case "0": 
         await supabase
           .from("lobbies")
           .update({
@@ -717,38 +669,23 @@ function GamePage() {
             },
           })
           .eq("id", lobby.id);
-        return false; // Word game will handle turn advancement
-      case "K": // Kings - role cards with special actions
-        // Kings just assign roles, no immediate action needed
-        // Special handling (like Dayman selecting Nightman) happens after card modal is closed
-        return true; // Advance turn immediately
-      case "Q": // Queens - Question Master
-        // Queens just assign role, no immediate action needed
-        return true; // Advance turn immediately
-      case "J": // Jacks - Various special abilities
-        // Jacks just assign roles, no immediate action needed
-        return true; // Advance turn immediately
-      case "A": // Aces - Barbara, Bruce, Gino, Gail
-        // Aces just assign roles, no immediate action needed
-        return true; // Advance turn immediately
+        return false; 
+      case "K":
+        return true; 
+      case "Q": 
+        return true;
+      case "J": 
+        return true; 
+      case "A": 
+        return true; 
       default:
-        // Any unhandled cards just advance the turn
+        
         console.log(`No specific action for rank: ${rank}`);
-        return true; // Advance turn immediately
+        return true; 
     }
   }
 
-  /**
-   * Handles drawing a card from the deck
-   * @param cardIndex - Index of the card in the deck array
-   * 
-   * Process:
-   * 1. Validates player turn and lobby state
-   * 2. Marks card as drawn and updates deck
-   * 3. Determines next player
-   * 4. Handles rank-specific logic (8s = mate selection, roles, etc.)
-   * 5. Logs card draw event and updates stats
-   */
+  
   async function drawCard(cardIndex: number): Promise<void> {
     if (!lobby || !currentPlayerId) {
       console.log("Cannot draw card:", { lobby: !!lobby, currentPlayerId });
@@ -761,13 +698,11 @@ function GamePage() {
       return;
     }
 
-    // Prevent double-clicks while drawing animation is active
     if (isDrawingCard) {
       console.log("Already drawing a card, please wait");
       return;
     }
 
-    // Check if there's ANY active prompt - block drawing until prompt is resolved
     if (activePrompt) {
       const promptMessages: Record<string, string> = {
         mate: `Waiting for ${activePrompt.drawnBy} to choose their drinking mate!`,
@@ -784,7 +719,6 @@ function GamePage() {
       return;
     }
 
-    // Check if there's an active word game - block drawing until game is complete
     if (wordGame) {
       alert("Complete the current word game before drawing another card!");
       return;
@@ -797,7 +731,6 @@ function GamePage() {
       players: players.map((p) => ({ id: p.id, name: p.name })),
     });
 
-    // Check if it's the current player's turn (allow anyone to draw if no current player set - first turn)
     if (lobby.current_player_id && lobby.current_player_id !== currentPlayerId) {
       const currentTurnPlayer = players.find(
         (p) => p.id === lobby.current_player_id
@@ -814,7 +747,6 @@ function GamePage() {
     const currentPlayer = players.find((p) => p.id === currentPlayerId);
     if (!currentPlayer) return;
 
-    // Mark card as drawn
     const updatedDeck = [...lobby.deck];
     updatedDeck[cardIndex] = {
       ...card,
@@ -822,7 +754,6 @@ function GamePage() {
       drawnBy: currentPlayer.name,
     };
 
-    // Get current player index for passing to card action handler
     const currentPlayerIndex = players.findIndex(
       (p) => p.id === currentPlayerId
     );
@@ -830,11 +761,9 @@ function GamePage() {
     try {
       console.log("Starting card draw process for card:", card.code);
       
-      // Set drawing animation state
       setIsDrawingCard(true);
       setTimeout(() => setIsDrawingCard(false), 600);
       
-      // Decrement Dayman's Nightman rounds if active
       let updatedDaymanNightman = lobby.dayman_nightman;
       if (updatedDaymanNightman && updatedDaymanNightman.rounds_remaining > 0) {
         updatedDaymanNightman = {
@@ -843,7 +772,6 @@ function GamePage() {
         };
       }
 
-      // Prepare stats update for face cards
       const rank = card.code.slice(0, -1);
       const isFaceCard = ["K", "Q", "J", "A"].includes(rank);
       const currentStats: GameStats = lobby.game_stats || {};
@@ -853,8 +781,6 @@ function GamePage() {
 
       console.log("Updating lobby deck and turn info...");
       
-      // OPTIMIZATION: Batch lobby updates into single query
-      // NOTE: Don't set current_player_id here - let DrawnCardModal's onAdvanceTurn handle it
       const updatePayload: Record<string, unknown> = {
         deck: updatedDeck,
         dayman_nightman: updatedDaymanNightman,
@@ -876,16 +802,13 @@ function GamePage() {
 
       console.log("Lobby updated successfully, showing drawn card...");
       
-      // Play card flip sound
       playSound("card-flip");
       
-      // Log card drawn event (non-blocking)
       logGameEvent(lobby.id, "card_drawn", currentPlayer.name, {
         card_code: card.code,
         message: `drew ${card.code}`
       });
 
-      // Show the drawn card to all players
       setDrawnCard({
         code: card.code,
         drawnBy: currentPlayer.name,
@@ -893,11 +816,8 @@ function GamePage() {
         playerIndex: currentPlayerIndex,
       });
 
-      // If rank is 8, trigger mate selection
       if (rank === "8") {
-        // OPTIMIZATION: Batch mate broken logs and prompt update
         if (lobby.mate) {
-          // Batch prompt update with mate broken logs
           await Promise.all([
             supabase
               .from("lobbies")
@@ -922,7 +842,6 @@ function GamePage() {
             })
           ]);
         } else {
-          // No existing mate, just set prompt
           await supabase
             .from("lobbies")
             .update({
@@ -939,13 +858,10 @@ function GamePage() {
         }
       }
 
-      // If card assigns a role, update player
       if (cardAssignsRole(card.code)) {
         const role = getCardRole(card.code);
         if (role) {
-          // OPTIMIZATION: Batch player and lobby updates using Promise.all
           if (role === "gail") {
-            // If Gail (Snail) card, update both player role and lobby snail_player
             await Promise.all([
               supabase
                 .from("players")
@@ -957,7 +873,6 @@ function GamePage() {
                 .eq("id", lobby.id)
             ]);
           } else {
-            // Just update player role
             await supabase
               .from("players")
               .update({ role })
@@ -971,21 +886,10 @@ function GamePage() {
     }
   }
 
-  /**
-   * Handles mate selection when a player draws an 8 card
-   * @param selectedPlayerName - Name of the player chosen as mate
-   * 
-   * Process:
-   * 1. Creates mate object with both player names
-   * 2. Updates lobby with new mate pair
-   * 3. Logs mate_assigned events for both players
-   * 4. Plays sound and shows success notification
-   */
   async function handleMateSelection(selectedPlayerName: string): Promise<void> {
     if (!lobby || !activePrompt || activePrompt.type !== "mate") return;
     
     try {
-      // Handle both snake_case (from DB) and camelCase (from type)
       const promptData = activePrompt as unknown as Record<string, unknown>;
       const drawerName = (promptData.drawn_by || promptData.drawnBy) as string;
       
@@ -999,8 +903,6 @@ function GamePage() {
         mate: selectedPlayerName,
       });
       
-      // OPTIMIZATION: Batch lobby update and event logs using Promise.all
-      // NOTE: Don't advance turn here - DrawnCardModal's onAdvanceTurn will handle it
       await Promise.all([
         supabase
           .from("lobbies")
@@ -1009,7 +911,6 @@ function GamePage() {
             active_prompt: null,
           })
           .eq("id", lobby.id),
-        // Log mate assigned events for both players (non-blocking)
         logGameEvent(lobby.id, "mate_assigned", drawerName, {
           target: selectedPlayerName,
           message: `${drawerName} and ${selectedPlayerName} are now mates!`
@@ -1020,7 +921,6 @@ function GamePage() {
         })
       ]);
       
-      // Play sound
       playSound("role-assigned");
       
       showToast(`${drawerName} and ${selectedPlayerName} are now mates! 💕`, "success");
@@ -1030,30 +930,11 @@ function GamePage() {
     }
   }
 
-  /**
-   * Apply mate drinking logic to a list of players who need to drink.
-   * If one mate is in the list, automatically add their mate.
-   * 
-   * @param drinkingPlayers - Array of player names who are drinking
-   * @returns Array with mate's partner added if applicable
-   * 
-   * @example
-   * // If Alice and Bob are mates, and Alice drinks:
-   * applyMateLogic(["Alice"]) // Returns ["Alice", "Bob"]
-   * 
-   * // If both already in list, no change:
-   * applyMateLogic(["Alice", "Bob"]) // Returns ["Alice", "Bob"]
-   */
-  // Note: Currently unused but ready for future automated drink tracking features
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function applyMateLogic(drinkingPlayers: string[]): string[] {
-    // Both or neither are drinking, no change needed
     return drinkingPlayers;
   }
 
-  /**
-   * Handles leaving the game and cleaning up player state
-   */
   async function leaveGame(): Promise<void> {
     if (!lobby || !currentPlayerId) return;
     
@@ -1061,21 +942,17 @@ function GamePage() {
       const player = players.find(p => p.id === currentPlayerId);
       
       if (player) {
-        // Log event before leaving
         await logGameEvent(lobby.id, "special_action", player.name, {
           action: "left the game",
           message: `${player.name} has left the game`
         });
         
-        // Remove player from database
         await supabase.from("players").delete().eq("id", currentPlayerId);
         
-        // Clear local storage
         sessionStorage.removeItem(`player-${code}`);
         localStorage.removeItem(`player-${code}`);
       }
       
-      // Redirect to home
       router.push("/");
     } catch (err) {
       console.error("Error leaving game:", err);
@@ -1083,15 +960,7 @@ function GamePage() {
     }
   }
 
-  /**
-   * Resets the game to initial state (host only)
-   * 
-   * Process:
-   * 1. Verifies host permissions
-   * 2. Creates new shuffled deck
-   * 3. Resets all game state (prompts, mini-games, roles)
-   * 4. Sets first player as current turn
-   */
+
   async function resetGame(): Promise<void> {
     if (!lobby) return;
 
@@ -1101,7 +970,6 @@ function GamePage() {
       return;
     }
 
-    // Re-initialize deck
     const suits = ["S", "H", "C", "D"];
     const ranks = [
       "A",
@@ -1131,17 +999,14 @@ function GamePage() {
       }
     }
 
-    // Shuffle
     for (let i = newDeck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
     }
 
-    // Pick random starting player
     const randomPlayer = players[Math.floor(Math.random() * players.length)];
 
     try {
-      // Reset lobby with all game state cleared
       await supabase
         .from("lobbies")
         .update({
@@ -1167,7 +1032,6 @@ function GamePage() {
         })
         .eq("id", lobby.id);
 
-      // OPTIMIZATION: Clear all player roles in parallel using Promise.all
       await Promise.all(
         players.map(player =>
           supabase
@@ -1177,13 +1041,11 @@ function GamePage() {
         )
       );
       
-      // Log game reset event
       await logGameEvent(lobby.id, "special_action", currentPlayer.name, {
         action: "reset the game",
         message: `${currentPlayer.name} reset the game - all cards, roles, and counters cleared`
       });
       
-      // Show success message
       showToast("Game reset! New deck shuffled and all counters cleared.", "success");
       playSound("role-assigned");
     } catch (err) {
@@ -1204,7 +1066,6 @@ function GamePage() {
       className="min-h-screen bg-cover bg-center bg-no-repeat relative"
       style={{ backgroundImage: "url('/green-felt.jpg')" }}
     >
-      {/* Top Right Button Group */}
       <div className="absolute top-4 right-4 z-10 flex gap-2">
         <Button
           onClick={() => setShowGameHistory(true)}
@@ -1232,7 +1093,6 @@ function GamePage() {
         </Button>
       </div>
       
-      {/* Chat Toggle Button - Top Left */}
       <Button
         onClick={() => setShowChat(!showChat)}
         className="absolute top-4 left-4 z-10 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-all"
@@ -1240,7 +1100,6 @@ function GamePage() {
         💬 Chat {showChat && "✓"}
       </Button>
 
-      {/* Mac Actions Button - Bottom Right */}
       {players.find((p) => p.id === currentPlayerId)?.role === "mac" && (
         <Button
           onClick={() => setShowMacActions(true)}
@@ -1250,7 +1109,6 @@ function GamePage() {
         </Button>
       )}
 
-      {/* Cricket Denial Button - Bottom Left */}
       {(() => {
         const cricketPlayer = players.find((p) => p.id === currentPlayerId && p.role === "cricket");
         if (!cricketPlayer) return null;
@@ -1262,7 +1120,6 @@ function GamePage() {
           <Button
             onClick={() => {
               if (canDeny) {
-                // Use denial
                 const confirm = window.confirm('Use "God says no!" to deny a drink?');
                 if (confirm) {
                   supabase
@@ -1276,7 +1133,6 @@ function GamePage() {
                     .eq("id", lobby?.id);
                 }
               } else {
-                // Must confess
                 setCricketConfession(true);
               }
             }}
@@ -1291,7 +1147,6 @@ function GamePage() {
         );
       })()}
 
-      {/* Player List - Left Side */}
       <div className="absolute left-4 top-4 bg-black/60 backdrop-blur-sm rounded-lg p-4 max-w-xs">
         <h2 className="text-white font-bold mb-3 text-lg">
           Players{" "}
@@ -1323,7 +1178,6 @@ function GamePage() {
                   <span className="text-green-300 text-xs font-bold">YOU</span>
                 )}
               </div>
-              {/* Role Token */}
               {player.role && (
                 <div className="mt-2 flex items-center gap-2">
                   <Image
@@ -1340,7 +1194,6 @@ function GamePage() {
                 </div>
               )}
 
-              {/* Frank (KC) Action Button */}
               {player.id === currentPlayerId && player.role === "frank" && (
                 <button
                   onClick={() => setShowFrankPerform(true)}
@@ -1350,7 +1203,6 @@ function GamePage() {
                 </button>
               )}
 
-              {/* Dayman (KD) Action Button */}
               {player.id === currentPlayerId && player.role === "charlie" && (
                 <button
                   onClick={() => setShowDaymanActions(true)}
@@ -1360,14 +1212,12 @@ function GamePage() {
                 </button>
               )}
 
-              {/* Cricket (JH) Denial/Confession Status */}
               {player.id === currentPlayerId && player.role === "cricket" && (
                 <div className="mt-2 bg-blue-900 text-white text-xs font-bold py-1 px-2 rounded text-center">
                   ⛪ GOD SAYS NO: {3 - ((lobby?.cricket_denials || {})[player.name] || 0)}/3 left
                 </div>
               )}
 
-              {/* Uncle Jack (JS) Tiny Hands Status - Only visible to the player who has it */}
               {player.id === currentPlayerId && player.role === "uncle-jack" && (
                 <div className="mt-2 bg-orange-600 text-white text-xs font-bold py-1 px-2 rounded text-center">
                   🤏 TINY HANDS: {((lobby?.uncle_jack_uses || {})[player.name] || 0)}/3 safe
@@ -1375,14 +1225,12 @@ function GamePage() {
                 </div>
               )}
 
-              {/* Non-Binary Pass Status - Only visible to the player who has it */}
               {player.id === currentPlayerId && player.gender === "non-binary" && (
                 <div className="mt-2 bg-purple-600 text-white text-xs font-bold py-1 px-2 rounded text-center">
                   ⚧️ GENDER PASSES: {4 - ((lobby?.non_binary_passes || {})[player.name] || 0)}/4 left
                 </div>
               )}
 
-              {/* Nightman Indicator */}
               {lobby?.dayman_nightman?.nightman === player.name && 
                lobby?.dayman_nightman?.rounds_remaining > 0 && (
                 <div className="mt-2 bg-gray-900 text-yellow-300 text-xs font-bold py-1 px-2 rounded text-center">
@@ -1391,21 +1239,18 @@ function GamePage() {
                 </div>
               )}
 
-              {/* Snail Indicator */}
               {lobby?.snail_player === player.name && (
                 <div className="mt-2 bg-green-600 text-white text-xs font-bold py-1 px-2 rounded text-center">
                   🐌 THE SNAIL (Gail)
                 </div>
               )}
 
-              {/* Mate Indicator */}
               {lobby?.mate && (lobby.mate.player1 === player.name || lobby.mate.player2 === player.name) && (
                 <div className="mt-2 bg-pink-600 text-white text-xs font-bold py-1 px-2 rounded text-center">
                   💕 MATES with {lobby.mate.player1 === player.name ? lobby.mate.player2 : lobby.mate.player1}
                 </div>
               )}
 
-              {/* Salt the Snail Button */}
               {player.id !== currentPlayerId &&
                 lobby?.snail_player === player.name && (
                   <button
@@ -1416,7 +1261,6 @@ function GamePage() {
                   </button>
                 )}
 
-              {/* Mac Bodyguard Shield */}
               {(() => {
                 const currentPlayerData = players.find(
                   (p) => p.id === currentPlayerId
@@ -1437,7 +1281,6 @@ function GamePage() {
 
                 const confirmedPlayers = activePrompt.confirmed_players || [];
 
-                // Only show shield if this player needs to drink and hasn't confirmed
                 if (
                   !drinkPlayers.includes(player.name) ||
                   confirmedPlayers.includes(player.name)
@@ -1447,7 +1290,6 @@ function GamePage() {
                 return (
                   <button
                     onClick={async () => {
-                      // Use Bodyguard action
                       const newUses = {
                         ...macUses,
                         [currentPlayerData.name]: usedActions + 1,
@@ -1457,7 +1299,6 @@ function GamePage() {
                         .update({ mac_action_uses: newUses })
                         .eq("id", lobby?.id);
 
-                      // Remove player from drink list and mark as confirmed
                       const newDrinkPlayers = drinkPlayers.filter(
                         (name) => name !== player.name
                       );
@@ -1509,7 +1350,6 @@ function GamePage() {
         </div>
       </div>
 
-      {/* Card Board - Center */}
       <div className="flex items-center justify-center min-h-screen py-4">
         <div className={`relative w-[600px] h-[600px] rounded-xl transition-all duration-300 ${
           lobby.current_player_id === currentPlayerId 
@@ -1548,7 +1388,6 @@ function GamePage() {
         </div>
       </div>
 
-      {/* Mate Selection Modal */}
       {activePrompt?.type === "mate" && (
         <MateSelectionModal
           activePrompt={activePrompt}
@@ -1558,7 +1397,6 @@ function GamePage() {
         />
       )}
 
-      {/* Mate Status Display */}
       {lobby.mate && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10 bg-pink-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-lg border-2 border-white/50 bounce-in">
           <span className="font-bold">
@@ -1567,7 +1405,6 @@ function GamePage() {
         </div>
       )}
 
-      {/* Game Over / Reset */}
       {allCardsDrawn && (
         <GameOverModal
           players={players}
@@ -1577,10 +1414,8 @@ function GamePage() {
         />
       )}
 
-      {/* Rules Modal */}
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
 
-      {/* Drawn Card Modal */}
       {drawnCard && lobby && (
         <DrawnCardModal
           drawnCard={drawnCard}
@@ -1595,7 +1430,6 @@ function GamePage() {
           onDaymanSelection={() => setDaymanSelectingNightman(true)}
           onAdvanceTurn={async () => {
             if (lobby && drawnCard) {
-              // Find the player who DREW the card (not necessarily the current logged-in user)
               const drawerPlayer = players.find((p) => p.name === drawnCard.drawnBy);
               if (!drawerPlayer) {
                 console.error("Could not find player who drew card:", drawnCard.drawnBy);
@@ -1606,7 +1440,6 @@ function GamePage() {
               const nextPlayerIndex = (drawerIndex + 1) % players.length;
               const nextPlayer = players[nextPlayerIndex];
               
-              // If this is the first turn (no current_player_id), start at turn 1
               const isFirstTurn = !lobby.current_player_id;
               const nextTurnNumber = isFirstTurn ? 1 : lobby.turn_number + 1;
               
@@ -1631,7 +1464,6 @@ function GamePage() {
         />
       )}
 
-      {/* Drink Animation/Prompt */}
       {activePrompt?.type === "drink" && (
         <DrinkPromptModal
           activePrompt={activePrompt}
@@ -1655,7 +1487,6 @@ function GamePage() {
         />
       )}
 
-      {/* Barbara Dice Roll Modal */}
       {barbaraDiceRoll && lobby && activePrompt && (
         <BarbaraDiceRollModal
           barbaraDiceRoll={barbaraDiceRoll}
@@ -1668,7 +1499,6 @@ function GamePage() {
         />
       )}
 
-      {/* Frank Performance Selection Modal */}
       {showFrankPerform && lobby && (
         <FrankPerformModal
           players={players}
@@ -1678,7 +1508,6 @@ function GamePage() {
         />
       )}
 
-      {/* Frank Performance Prompt Modal (target choosing to perform/refuse and Frank judging) */}
       {activePrompt && (activePrompt.type === "frank-perform" || activePrompt.type === "frank-judge") && lobby && (
         <FrankPerformancePromptModal
           activePrompt={activePrompt}
@@ -1690,7 +1519,6 @@ function GamePage() {
         />
       )}
 
-      {/* Dayman Actions Modal */}
       {showDaymanActions && lobby && (
         <DaymanActionsModal
           players={players}
@@ -1704,7 +1532,6 @@ function GamePage() {
         />
       )}
 
-      {/* Dayman Select Nightman Modal */}
       {daymanSelectingNightman && lobby && (
         <DaymanSelectNightmanModal
           players={players}
@@ -1714,7 +1541,6 @@ function GamePage() {
         />
       )}
 
-      {/* Bruce Donation Selection Modal */}
       {bruceSelectingDonation && lobby && (
         <BruceDonationModal
           players={players}
@@ -1728,7 +1554,6 @@ function GamePage() {
         />
       )}
 
-      {/* Bruce Voting Modal */}
       {lobby?.bruce_voting && lobby.bruce_voting.target && lobby && (
         <BruceVotingModal
           bruceVoting={lobby.bruce_voting}
@@ -1740,7 +1565,6 @@ function GamePage() {
         />
       )}
 
-      {/* Gino Swap Voting Modal */}
       {lobby?.gino_swap_voting && lobby.gino_swap_voting.target && lobby && (
         <GinoSwapVotingModal
           ginoSwapVoting={lobby.gino_swap_voting}
@@ -1752,7 +1576,6 @@ function GamePage() {
         />
       )}
 
-      {/* Gino Target Selection Modal */}
       {ginoSwapVoting && !lobby?.gino_swap_voting && lobby && (
         <GinoSwapTargetModal
           ginoSwapVoting={ginoSwapVoting}
@@ -1764,7 +1587,6 @@ function GamePage() {
       )}
 
 
-      {/* Salt the Snail Confirmation Modal */}
       {showSaltSnail && lobby?.snail_player && (
         <SaltSnailModal
           snailPlayerName={lobby.snail_player}
@@ -1773,7 +1595,6 @@ function GamePage() {
         />
       )}
 
-      {/* Mac Actions Modal */}
       {showMacActions && (() => {
         const currentPlayer = players.find((p) => p.id === currentPlayerId);
         if (!currentPlayer || currentPlayer.role !== "mac") return null;
@@ -1799,7 +1620,6 @@ function GamePage() {
         );
       })()}
 
-      {/* Mac Action Player Selection */}
       {macSelectingPlayer && (() => {
         const macPlayer = players.find((p) => p.role === "mac");
         if (!macPlayer) return null;
@@ -1828,7 +1648,6 @@ function GamePage() {
         );
       })()}
 
-      {/* Choose Player Prompt */}
       {activePrompt?.type === "choose-player" && (
         <ChoosePlayerModal
           activePrompt={activePrompt}
@@ -1841,7 +1660,6 @@ function GamePage() {
         />
       )}
 
-      {/* Mac Action Prompt (Karate/Confession) */}
       {(activePrompt?.type as string) === "mac-action" && activePrompt && (() => {
         const currentPlayerName = players.find((p) => p.id === currentPlayerId)?.name;
         return (
@@ -1854,7 +1672,6 @@ function GamePage() {
         );
       })()}
 
-      {/* Rock Paper Scissors Game */}
       {rpsGame && lobby && (
         <RPSGameModal
           rpsGame={rpsGame}
@@ -1866,7 +1683,6 @@ function GamePage() {
         />
       )}
 
-      {/* Word Game (Episodes / Rhyme / Category) */}
       {wordGame && lobby && lobby.current_player_id && (
         <WordGameModal
           wordGame={wordGame}
@@ -1879,7 +1695,6 @@ function GamePage() {
         />
       )}
 
-      {/* Frank Performance Prompt */}
       {(activePrompt?.type as string) === "frank-perform" && activePrompt && lobby && (
         <FrankPerformancePromptModal
           activePrompt={activePrompt}
@@ -1891,7 +1706,6 @@ function GamePage() {
         />
       )}
 
-      {/* Nightman Response Prompt */}
       {(activePrompt?.type as string) === "nightman-response" && activePrompt && (
         <NightmanResponseModal
           activePrompt={activePrompt}
@@ -1903,7 +1717,6 @@ function GamePage() {
         />
       )}
 
-      {/* Cricket Confession Modal */}
       {cricketConfession && 
         players.find((p) => p.id === currentPlayerId && p.role === "cricket") && lobby && (
         <CricketConfessionModal 
@@ -1913,14 +1726,12 @@ function GamePage() {
         />
       )}
 
-      {/* Mate Selection */}
       {activePrompt?.type === "mate" && lobby && (
         <MateSelectionModal
           activePrompt={activePrompt}
           players={players}
           currentPlayerId={currentPlayerId}
           onMateSelection={async (playerName: string) => {
-            // Update mate assignment and clear prompt
             await supabase
               .from("lobbies")
               .update({
@@ -1932,11 +1743,9 @@ function GamePage() {
               })
               .eq("id", lobby.id);
             
-            // Play role assigned sound and show toast
             playSound("role-assigned");
             showToast(`${activePrompt.drawnBy} and ${playerName} are now mates! 💕`, "success");
             
-            // Log mate assigned events for both players
             await Promise.all([
               logGameEvent(lobby.id, "mate_assigned", activePrompt.drawnBy, {
                 target: playerName,
@@ -1948,19 +1757,16 @@ function GamePage() {
               })
             ]);
             
-            // DO NOT advance turn here - let the DrawnCardModal handle it
           }}
         />
       )}
 
-      {/* Game History Modal */}
       <GameHistory 
         lobbyId={lobby.id} 
         isOpen={showGameHistory} 
         onClose={() => setShowGameHistory(false)} 
       />
 
-      {/* Chat Component */}
       {showChat && (
         <GameChat
           lobbyId={lobby.id}
@@ -1970,7 +1776,6 @@ function GamePage() {
         />
       )}
 
-      {/* Game Stats Modal */}
       <GameStatsModal
         lobbyId={lobby.id}
         players={players}
@@ -1978,13 +1783,11 @@ function GamePage() {
         onClose={() => setShowGameStats(false)}
       />
 
-      {/* Toast Container */}
       <ToastContainer />
     </div>
   );
 }
 
-// Wrap with Error Boundary and export
 export default function GamePageWrapper() {
   return (
     <ErrorBoundary>

@@ -127,7 +127,6 @@ export function GameStats({ lobbyId, players, show, onClose }: GameStatsProps) {
               </div>
             </div>
 
-            {/* All Players Stats */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
               <h3 className="text-white font-bold text-xl mb-4">
                 All Players

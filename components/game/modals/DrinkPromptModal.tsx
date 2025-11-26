@@ -39,7 +39,6 @@ export function DrinkPromptModal({
   const shouldCurrentPlayerDrink =
     currentPlayer && drinkPlayers.includes(currentPlayer.name);
 
-  // Calculate non-binary pass info
   const isNonBinary = currentPlayer?.gender === "non-binary";
   const isGenderCard = activePrompt.data?.gender_card !== undefined;
   const nonBinaryPasses = lobby?.non_binary_passes || {};
@@ -55,21 +54,17 @@ export function DrinkPromptModal({
     );
 
     if (allDone) {
-      // Check if this prompt should skip turn advancement (e.g., Mac actions)
       const shouldSkipTurnAdvance = activePrompt.data?.no_turn_advance === true;
       
       if (shouldSkipTurnAdvance) {
         console.log("Skipping turn advancement (Mac action or similar)");
-        // Clear the prompt but don't advance turn
         await supabase.from("lobbies").update({ active_prompt: null }).eq("id", lobby.id);
         return;
       }
       
-      // Find the player who DREW the card that triggered this prompt
       const drawerPlayer = players.find((p) => p.name === activePrompt.drawnBy);
       if (!drawerPlayer) {
         console.error("Could not find player who drew card:", activePrompt.drawnBy);
-        // Fallback to current player
         const currentPlayerIndex = players.findIndex((p) => p.id === lobby.current_player_id);
         if (currentPlayerIndex === -1) {
           console.error("Could not find current player in players list");
@@ -146,7 +141,6 @@ export function DrinkPromptModal({
     };
 
     if (allDone) {
-      // Find the player who DREW the card that triggered this prompt
       const drawerPlayer = players.find((p) => p.name === activePrompt.drawnBy);
       if (!drawerPlayer) {
         console.error("Could not find player who drew card:", activePrompt.drawnBy);
@@ -171,7 +165,6 @@ export function DrinkPromptModal({
       updateData.current_player_id = nextPlayer.id;
       updateData.turn_number = lobby.turn_number + 1;
     } else {
-      // Build prompt with database column names (snake_case)
       updateData.active_prompt = {
         type: activePrompt.type,
         card_code: activePrompt.card_code,
@@ -220,7 +213,6 @@ export function DrinkPromptModal({
       .eq("id", lobby.id);
 
     if (allDone) {
-      // Check if this prompt should skip turn advancement (e.g., Mac actions)
       const shouldSkipTurnAdvance = activePrompt.data?.no_turn_advance === true;
       
       if (shouldSkipTurnAdvance) {
@@ -232,7 +224,6 @@ export function DrinkPromptModal({
         return;
       }
 
-      // Find the player who DREW the card that triggered this prompt
       const drawerPlayer = players.find((p) => p.name === activePrompt.drawnBy);
       if (!drawerPlayer) {
         console.error("Could not find player who drew card:", activePrompt.drawnBy);
@@ -342,7 +333,6 @@ export function DrinkPromptModal({
       .eq("id", lobby.id);
 
     if (allDone) {
-      // Check if this prompt should skip turn advancement (e.g., Mac actions)
       const shouldSkipTurnAdvance = activePrompt.data?.no_turn_advance === true;
       
       if (shouldSkipTurnAdvance) {
@@ -354,7 +344,6 @@ export function DrinkPromptModal({
         return;
       }
 
-      // Find the player who DREW the card that triggered this prompt
       const drawerPlayer = players.find((p) => p.name === activePrompt.drawnBy);
       if (!drawerPlayer) {
         console.error("Could not find player who drew card:", activePrompt.drawnBy);
@@ -413,7 +402,6 @@ export function DrinkPromptModal({
       [currentPlayer.name]: usedActions + 1,
     };
 
-    // Update last action turn
     const macLastActionTurn = lobby?.mac_last_action_turn || {};
     const newLastActionTurn = {
       ...macLastActionTurn,
@@ -438,7 +426,6 @@ export function DrinkPromptModal({
       .eq("id", lobby.id);
 
     if (allDone) {
-      // Check if this prompt should skip turn advancement (e.g., Mac actions)
       const shouldSkipTurnAdvance = activePrompt.data?.no_turn_advance === true;
       
       if (shouldSkipTurnAdvance) {
@@ -450,7 +437,6 @@ export function DrinkPromptModal({
         return;
       }
 
-      // Find the player who DREW the card that triggered this prompt
       const drawerPlayer = players.find((p) => p.name === activePrompt.drawnBy);
       if (!drawerPlayer) {
         console.error("Could not find player who drew card:", activePrompt.drawnBy);
@@ -503,7 +489,6 @@ export function DrinkPromptModal({
     }
   }
 
-  // Handle case where no one needs to drink
   const noDrinkers = drinkPlayers.length === 0 || confirmedPlayers.includes("_skip");
 
   async function handleSkipPrompt() {
@@ -557,7 +542,6 @@ export function DrinkPromptModal({
             `${activePrompt.drawnBy} - Take a drink!`}
         </p>
 
-        {/* Show who needs to drink and who has confirmed */}
         <div className="mt-6 mb-4 bg-white/20 rounded-lg p-4">
           <p className="text-white font-semibold mb-2">Drinking:</p>
           <div className="flex flex-wrap gap-2 justify-center">
@@ -585,7 +569,6 @@ export function DrinkPromptModal({
               Done Drinking
             </Button>
 
-            {/* Non-Binary Pass Option */}
             {canUseNonBinaryPass && (
               <Button
                 onClick={handleNonBinaryPass}
@@ -600,7 +583,6 @@ export function DrinkPromptModal({
               </p>
             )}
 
-            {/* Golden God Refuse Option */}
             {currentPlayer?.role === "golden-god" &&
               (() => {
                 const redirects = lobby?.golden_god_redirects || {};
@@ -621,7 +603,6 @@ export function DrinkPromptModal({
                 );
               })()}
 
-            {/* Uncle Jack Tiny Hands Option */}
             {currentPlayer?.role === "uncle-jack" &&
               (() => {
                 const uses = lobby?.uncle_jack_uses || {};
@@ -641,7 +622,6 @@ export function DrinkPromptModal({
                 );
               })()}
 
-            {/* Cricket God Says No Option */}
             {currentPlayer?.role === "cricket" &&
               (() => {
                 const denials = lobby?.cricket_denials || {};
@@ -662,7 +642,6 @@ export function DrinkPromptModal({
                 );
               })()}
 
-            {/* Barbara Dice Roll Option */}
             {currentPlayer?.role === "barbara" && (
               <Button
                 onClick={() => {
@@ -680,7 +659,6 @@ export function DrinkPromptModal({
               </Button>
             )}
 
-            {/* Mac Protein Share Option */}
             {currentPlayer?.role === "mac" &&
               (() => {
                 const macUses = lobby?.mac_action_uses || {};
@@ -711,7 +689,6 @@ export function DrinkPromptModal({
                 );
               })()}
 
-            {/* Bruce Donation Option */}
             {currentPlayer?.role === "bruce" && (
               <Button
                 onClick={onBruceDonation}
@@ -721,7 +698,6 @@ export function DrinkPromptModal({
               </Button>
             )}
 
-            {/* Gino Swap Option */}
             {currentPlayer?.role === "gino" &&
               (() => {
                 const swapsUsed = lobby?.gino_swaps_used || {};
@@ -758,7 +734,6 @@ export function DrinkPromptModal({
               Waiting for players to finish drinking...
             </p>
             
-            {/* Mac Bodyguard for Other Players */}
             {currentPlayer?.role === "mac" &&
               (() => {
                 const macUses = lobby?.mac_action_uses || {};
@@ -772,7 +747,6 @@ export function DrinkPromptModal({
 
                 if (usedActionThisTurn) return null;
 
-                // Get players who haven't confirmed yet
                 const unconfirmedDrinkers = drinkPlayers.filter(
                   (name) => !confirmedPlayers.includes(name)
                 );

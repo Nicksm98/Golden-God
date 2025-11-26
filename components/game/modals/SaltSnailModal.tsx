@@ -17,7 +17,6 @@ export function SaltSnailModal({
   const supabase = createClient();
 
   const handleSalt = async () => {
-    // Snail must finish drink
     await supabase
       .from("lobbies")
       .update({
@@ -35,7 +34,6 @@ export function SaltSnailModal({
       })
       .eq("id", lobbyId);
 
-    // Remove Gail role - find player by name and clear role
     const { data: players } = await supabase
       .from("players")
       .select("*")

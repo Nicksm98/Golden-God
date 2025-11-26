@@ -28,7 +28,6 @@ export function MacActionsModal({
       return;
     }
     
-    // Only call onSelectAction for implemented actions
     if (action !== "bodyguard") {
       onSelectAction(action);
     }
@@ -63,7 +62,6 @@ export function MacActionsModal({
         </div>
 
         <div className="space-y-3">
-          {/* 1. Bodyguard */}
           <Button
             onClick={() => handleActionClick("bodyguard", false)}
             disabled={actionsRemaining <= 0}
@@ -75,7 +73,6 @@ export function MacActionsModal({
             </div>
           </Button>
 
-          {/* 2. Karate Demonstration */}
           <button
             onClick={() => handleActionClick("karate", true)}
             disabled={actionsRemaining <= 0}
@@ -87,7 +84,6 @@ export function MacActionsModal({
             </div>
           </button>
 
-          {/* 3. Confession Time */}
           <button
             onClick={() => handleActionClick("confession", true)}
             disabled={actionsRemaining <= 0}
@@ -99,7 +95,6 @@ export function MacActionsModal({
             </div>
           </button>
 
-          {/* 4. Protein Share */}
           <button
             onClick={() => handleActionClick("protein", false)}
             disabled={actionsRemaining <= 0}
@@ -111,7 +106,6 @@ export function MacActionsModal({
             </div>
           </button>
 
-          {/* 5. Challenge of Toughness */}
           <button
             onClick={() => handleActionClick("challenge", true)}
             disabled={actionsRemaining <= 0}

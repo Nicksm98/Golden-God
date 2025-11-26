@@ -1,6 +1,5 @@
 import { createClient } from "./supabase/client";
 
-// Generate a random 6-character alphanumeric code
 export function generateLobbyCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let code = "";
@@ -10,9 +9,8 @@ export function generateLobbyCode(): string {
   return code;
 }
 
-// Initialize a fresh deck of 52 cards
 export function initializeDeck() {
-  const suits = ["S", "H", "C", "D"]; // Spades, Hearts, Clubs, Diamonds
+  const suits = ["S", "H", "C", "D"];
   const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"];
   const deck = [];
 
@@ -22,7 +20,6 @@ export function initializeDeck() {
     }
   }
 
-  // Shuffle the deck
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -31,7 +28,6 @@ export function initializeDeck() {
   return deck;
 }
 
-// Create a new lobby
 export async function createLobby() {
   const supabase = createClient();
   const code = generateLobbyCode();
@@ -56,7 +52,6 @@ export async function createLobby() {
   }
 }
 
-// Check if a lobby exists
 export async function checkLobbyExists(code: string) {
   const supabase = createClient();
 

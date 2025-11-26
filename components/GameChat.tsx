@@ -21,7 +21,6 @@ export function GameChat({ lobbyId, playerName, isOpen, onClose }: GameChatProps
   useEffect(() => {
     if (!isOpen) return;
 
-    // Load existing messages
     const loadMessages = async () => {
       const { data } = await supabase
         .from("chat_messages")
@@ -38,7 +37,6 @@ export function GameChat({ lobbyId, playerName, isOpen, onClose }: GameChatProps
 
     loadMessages();
 
-    // Subscribe to new messages
     const channel = supabase
       .channel(`chat-${lobbyId}`)
       .on(

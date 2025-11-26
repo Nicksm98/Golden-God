@@ -78,7 +78,6 @@ export function RPSGameModal({
     const newConfirmed = [...confirmedPlayers, currentPlayer.name];
 
     if (newConfirmed.length >= 2) {
-      // Both confirmed, proceed to next round or end game
       const p1 = rpsGame.player1_choice!;
       const p2 = rpsGame.player2_choice!;
       let newP1Score = rpsGame.player1_score;
@@ -152,7 +151,6 @@ export function RPSGameModal({
           .eq("id", lobbyId);
       }
     } else {
-      // First player confirmed, wait for second
       await supabase
         .from("lobbies")
         .update({

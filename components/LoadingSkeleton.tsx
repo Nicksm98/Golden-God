@@ -45,7 +45,6 @@ export function LoadingSkeleton({ type = "full-page", count = 1 }: LoadingSkelet
     );
   }
 
-  // Full page loading
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-900 via-blue-900 to-black">
       <div className="text-center space-y-6 p-8">

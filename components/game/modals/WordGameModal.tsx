@@ -82,7 +82,6 @@ export function WordGameModal({
   const handleSubmit = async (value: string) => {
     if (!value) return;
 
-    // Validation logic
     if (wordGame.type === "7-episodes") {
       const isValid = ALWAYS_SUNNY_EPISODES.some(
         (ep) => ep.toLowerCase() === value.toLowerCase()
@@ -101,7 +100,6 @@ export function WordGameModal({
       }
     }
 
-    // Check for duplicates in rhyme and category games
     if (wordGame.type === "9-rhyme" && wordGame.currentWord) {
       const isRepeat = wordGame.usedWords.some(
         (w) => w.toLowerCase() === value.toLowerCase()
@@ -122,7 +120,6 @@ export function WordGameModal({
       }
     }
 
-    // For rhyme/category game, if this is the first input, it's setting the word/category
     const isSettingInitial =
       (wordGame.type === "9-rhyme" || wordGame.type === "10-category") &&
       !wordGame.currentWord;

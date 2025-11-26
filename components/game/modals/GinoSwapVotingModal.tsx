@@ -33,7 +33,7 @@ export function GinoSwapVotingModal({
     currentPlayerName ? ginoSwapVoting.votes[currentPlayerName] !== undefined : false;
   const totalVotes = Object.keys(ginoSwapVoting.votes).length;
   const approveVotes = Object.values(ginoSwapVoting.votes).filter((v) => v).length;
-  const eligibleVoters = players.length - 1; // Exclude Gino from voting
+  const eligibleVoters = players.length - 1;
 
   const handleVote = async (approve: boolean) => {
     if (!currentPlayerName || hasVoted) return;
@@ -46,12 +46,10 @@ export function GinoSwapVotingModal({
     const newTotalVotes = Object.keys(newVotes).length;
 
     if (newTotalVotes >= eligibleVoters) {
-      // All votes are in, determine outcome
       const newApproveVotes = Object.values(newVotes).filter((v) => v).length;
       const majority = Math.ceil(eligibleVoters / 2);
 
       if (newApproveVotes >= majority) {
-        // Swap approved - target drinks
         const drinkPlayers = addMatesToDrinkList([ginoSwapVoting.target]);
         await supabase
           .from("lobbies")
@@ -70,7 +68,6 @@ export function GinoSwapVotingModal({
           })
           .eq("id", lobbyId);
       } else {
-        // Swap rejected - Gino drinks
         const drinkPlayers = addMatesToDrinkList([ginoSwapVoting.swapper]);
         await supabase
           .from("lobbies")
@@ -91,7 +88,6 @@ export function GinoSwapVotingModal({
       }
       onClose();
     } else {
-      // Update votes
       await supabase
         .from("lobbies")
         .update({

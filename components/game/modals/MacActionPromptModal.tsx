@@ -38,7 +38,6 @@ export function MacActionPromptModal({
       return;
     }
 
-    // Preserve the original card drawer to maintain turn order
     const originalDrawer = activePrompt.drawnBy;
     const macDrinkers = addMatesToDrinkList([String(macPlayer)]);
     await supabase
@@ -63,7 +62,6 @@ export function MacActionPromptModal({
 
   const handleDrink = async () => {
     if (!targetName) return;
-    // Preserve the original card drawer to maintain turn order
     const originalDrawer = activePrompt.drawnBy;
     const targetDrinkers = addMatesToDrinkList([targetName]);
     await supabase

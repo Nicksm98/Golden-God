@@ -66,7 +66,6 @@ export function NightmanResponseModal({
           The Nightman must respond &quot;Dayman!&quot; or drink!
         </p>
 
-        {/* Countdown Timer */}
         <div className="mb-6 flex items-center justify-center">
           <div
             className={`text-6xl font-bold ${
@@ -79,7 +78,6 @@ export function NightmanResponseModal({
           </div>
         </div>
 
-        {/* Nightman must respond */}
         {isNightman ? (
           <div className="flex flex-col gap-4">
             <Button

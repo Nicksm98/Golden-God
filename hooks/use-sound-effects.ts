@@ -6,7 +6,6 @@ export function useSoundEffects() {
   const audioContext = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    // Create AudioContext on mount
     audioContext.current = new (window.AudioContext || (window as never)["webkitAudioContext"])();
     
     return () => {
@@ -24,10 +23,8 @@ export function useSoundEffects() {
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 
-    // Define different sounds
     switch (type) {
       case "card-flip":
-        // Quick swoosh sound
         oscillator.frequency.setValueAtTime(400, ctx.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1);
         gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
@@ -37,7 +34,6 @@ export function useSoundEffects() {
         break;
 
       case "drink":
-        // Alert sound
         oscillator.frequency.setValueAtTime(800, ctx.currentTime);
         oscillator.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
         oscillator.frequency.setValueAtTime(800, ctx.currentTime + 0.2);
@@ -48,7 +44,6 @@ export function useSoundEffects() {
         break;
 
       case "turn-chime":
-        // Pleasant notification
         oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
         oscillator.frequency.setValueAtTime(659.25, ctx.currentTime + 0.15); // E5
         oscillator.frequency.setValueAtTime(783.99, ctx.currentTime + 0.3); // G5
@@ -59,7 +54,6 @@ export function useSoundEffects() {
         break;
 
       case "role-assigned":
-        // Fanfare
         oscillator.frequency.setValueAtTime(400, ctx.currentTime);
         oscillator.frequency.setValueAtTime(600, ctx.currentTime + 0.1);
         oscillator.frequency.setValueAtTime(800, ctx.currentTime + 0.2);

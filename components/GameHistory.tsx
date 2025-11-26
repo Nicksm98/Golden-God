@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import type { GameHistoryProps } from "@/lib/types";
 
-/**
- * Game event structure from database
- */
 interface GameEvent {
   id: string;
   lobby_id: string;
@@ -32,7 +29,6 @@ export function GameHistory({ lobbyId, isOpen, onClose }: GameHistoryProps) {
   useEffect(() => {
     if (!isOpen) return;
 
-    // Load existing events
     const loadEvents = async () => {
       const { data } = await supabase
         .from("game_events")
@@ -48,7 +44,6 @@ export function GameHistory({ lobbyId, isOpen, onClose }: GameHistoryProps) {
 
     loadEvents();
 
-    // Subscribe to new events
     const channel = supabase
       .channel(`game-events-${lobbyId}`)
       .on(

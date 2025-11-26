@@ -34,7 +34,6 @@ export function FrankPerformancePromptModal({
   };
 
   const handlePerformanceSelected = async (performanceType: string) => {
-    // Track performance
     const newPerformances = {
       ...frankPerformances,
       [targetName || ""]: (frankPerformances[targetName || ""] || 0) + 1,
@@ -45,7 +44,6 @@ export function FrankPerformancePromptModal({
       .update({ frank_performances: newPerformances })
       .eq("id", lobbyId);
 
-    // Update prompt to ask Frank if they were moved by the art
     await supabase
       .from("lobbies")
       .update({
@@ -64,7 +62,6 @@ export function FrankPerformancePromptModal({
   };
 
   const handleMovedByArt = async () => {
-    // Frank was moved and must drink
     const frankDrinkers = addMatesToDrinkList([activePrompt.drawnBy]);
     await supabase
       .from("lobbies")
@@ -84,7 +81,6 @@ export function FrankPerformancePromptModal({
   };
 
   const handleNotMoved = async () => {
-    // Frank was not moved, performer drinks
     const performerDrinkers = addMatesToDrinkList([activePrompt.data?.target || ""]);
     await supabase
       .from("lobbies")

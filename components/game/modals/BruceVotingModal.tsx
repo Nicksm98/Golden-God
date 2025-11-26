@@ -47,12 +47,10 @@ export function BruceVotingModal({
     const newTotalVotes = Object.keys(newVotes).length;
 
     if (newTotalVotes >= eligibleVoters) {
-      // All votes are in, determine outcome
       const newScamVotes = Object.values(newVotes).filter((v) => v).length;
       const newLegitimateVotes = newTotalVotes - newScamVotes;
 
       if (newScamVotes > newLegitimateVotes) {
-        // Scam wins - Bruce drinks
         const drinkPlayers = addMatesToDrinkList([bruceVoting.bruce]);
         await supabase
           .from("lobbies")
@@ -71,7 +69,6 @@ export function BruceVotingModal({
           })
           .eq("id", lobbyId);
       } else {
-        // Legitimate wins - Target drinks
         const drinkPlayers = addMatesToDrinkList([bruceVoting.target]);
         await supabase
           .from("lobbies")
@@ -92,7 +89,6 @@ export function BruceVotingModal({
       }
       onClose();
     } else {
-      // Update votes
       await supabase
         .from("lobbies")
         .update({
