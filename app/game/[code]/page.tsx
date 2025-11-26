@@ -4,10 +4,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 
 // Single subscription manager per lobby
+import type { Player } from "@/lib/types";
 function createLobbySubscriber(
   supabase: SupabaseClient,
   lobbyId: string,
-  applyLobbyUpdate: (data: unknown) => void
+  applyLobbyUpdate: (data: unknown) => void,
+  setPlayersCallback?: (players: Player[]) => void
 ) {
   const topic = `room:${lobbyId}`;
   let channel: ReturnType<SupabaseClient['channel']> | null = null;
@@ -20,11 +22,26 @@ function createLobbySubscriber(
     if (channel && ((channel as unknown as { state?: string }).state === 'SUBSCRIBING' || (channel as unknown as { state?: string }).state === 'PENDING')) return;
 
     channel = supabase.channel(topic, { config: { private: true } });
-    channel.on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
+    channel.on('broadcast', { event: '*' }, async ({ event, payload }: { event: string; payload: unknown }) => {
       console.debug('RECEIVED broadcast', { event, payload, time: new Date().toISOString() });
       const data = (payload as Record<string, unknown>)?.new ?? (payload as Record<string, unknown>)?.NEW ?? payload;
       console.debug('RESOLVED DATA', data);
       applyLobbyUpdate(data);
+
+      // Reload players after broadcast to ensure sync
+      if (setPlayersCallback && data && typeof (data as { id?: string }).id === 'string') {
+        try {
+          const lobbyId = (data as { id: string }).id;
+          const { data: playersData } = await supabase
+            .from("players")
+            .select("*")
+            .eq("lobby_id", lobbyId)
+            .order("joined_at", { ascending: true });
+          setPlayersCallback(playersData as Player[] || []);
+        } catch (err) {
+          console.warn('Failed to reload players after broadcast', err);
+        }
+      }
     });
     channel.subscribe((status: string) => {
       console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
@@ -489,11 +506,16 @@ function GamePage() {
     const lobbyId = lobby.id;
     console.log("[SUBSCRIPTION] Setting up broadcast subscription for lobby:", lobbyId);
 
-    const subscriber = createLobbySubscriber(supabase, lobbyId, (data) => {
-      if (typeof data === "object" && data) {
-        setLobby(data as Lobby);
-      }
-    });
+    const subscriber = createLobbySubscriber(
+      supabase,
+      lobbyId,
+      (data) => {
+        if (typeof data === "object" && data) {
+          setLobby(data as Lobby);
+        }
+      },
+      setPlayers
+    );
 
     return () => {
       console.log("[SUBSCRIPTION] Cleaning up broadcast subscription for lobby:", lobbyId);
