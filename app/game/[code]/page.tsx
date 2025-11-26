@@ -20,10 +20,10 @@ function createLobbySubscriber(
     if (channel && ((channel as unknown as { state?: string }).state === 'SUBSCRIBING' || (channel as unknown as { state?: string }).state === 'PENDING')) return;
 
     channel = supabase.channel(topic, { config: { private: true } });
-    channel.on('broadcast', { event: '*' }, ({ payload }: { event: string; payload: unknown }) => {
-      // broadcast_changes sends structured payload with NEW/OLD
-      const p = payload as Record<string, unknown>;
-      const data = p?.new ?? p?.NEW ?? payload;
+    channel.on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
+      console.debug('RECEIVED broadcast', { event, payload, time: new Date().toISOString() });
+      const data = (payload as Record<string, unknown>)?.new ?? (payload as Record<string, unknown>)?.NEW ?? payload;
+      console.debug('RESOLVED DATA', data);
       applyLobbyUpdate(data);
     });
     channel.subscribe((status: string) => {
