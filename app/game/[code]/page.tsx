@@ -1337,35 +1337,36 @@ function GamePage() {
             ? 'ring-8 ring-yellow-400 ring-opacity-75 shadow-2xl shadow-yellow-400/50 animate-pulse' 
             : ''
         }`}>
-          {lobby.deck.map((card, index) => {
-            const pos = shamrockPositions[index];
-            if (!pos) return null;
-
-            return (
-              <div
-                key={index}
-                className={`absolute transition-all duration-200 ease-out cursor-pointer hover-lift ${isDrawingCard ? 'card-flip' : ''}`}
-                style={{
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
-                  transform:
-                    hoveredCard === index && !card.drawn
-                      ? "translate(-50%, -60%) scale(1.2)"
-                      : "translate(-50%, -50%)",
-                  zIndex: hoveredCard === index ? 10 : card.drawn ? 0 : 1,
-                  opacity: card.drawn ? 0 : 1,
-                  pointerEvents: card.drawn ? "none" : "auto",
-                }}
-                onMouseEnter={() => !card.drawn && setHoveredCard(index)}
-                onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => drawCard(index)}
-              >
-                <div className="w-12 h-16 bg-linear-to-br from-green-700 to-green-900 rounded-lg shadow-lg border-2 border-yellow-600 flex items-center justify-center">
-                  <span className="text-2xl">🍀</span>
-                </div>
-              </div>
-            );
-          })}
+          {Array.isArray(lobby.deck) && lobby.deck.length > 0
+            ? lobby.deck.map((card, index) => {
+                const pos = shamrockPositions[index];
+                if (!pos) return null;
+                return (
+                  <div
+                    key={index}
+                    className={`absolute transition-all duration-200 ease-out cursor-pointer hover-lift ${isDrawingCard ? 'card-flip' : ''}`}
+                    style={{
+                      left: `${pos.x}px`,
+                      top: `${pos.y}px`,
+                      transform:
+                        hoveredCard === index && !card.drawn
+                          ? "translate(-50%, -60%) scale(1.2)"
+                          : "translate(-50%, -50%)",
+                      zIndex: hoveredCard === index ? 10 : card.drawn ? 0 : 1,
+                      opacity: card.drawn ? 0 : 1,
+                      pointerEvents: card.drawn ? "none" : "auto",
+                    }}
+                    onMouseEnter={() => !card.drawn && setHoveredCard(index)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                    onClick={() => drawCard(index)}
+                  >
+                    <div className="w-12 h-16 bg-linear-to-br from-green-700 to-green-900 rounded-lg shadow-lg border-2 border-yellow-600 flex items-center justify-center">
+                      <span className="text-2xl">🍀</span>
+                    </div>
+                  </div>
+                );
+              })
+            : null}
         </div>
       </div>
 
