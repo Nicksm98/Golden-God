@@ -23,22 +23,44 @@ function createLobbySubscriber(
     channel = supabase.channel(topic, { config: { private: true } });
     channel.on('broadcast', { event: '*' }, async ({ event, payload }: { event: string; payload: unknown }) => {
       console.debug('RECEIVED broadcast', { event, payload, time: new Date().toISOString() });
-      const data = (payload as Record<string, unknown>)?.new ?? (payload as Record<string, unknown>)?.NEW ?? payload;
-      console.debug('RESOLVED DATA', data);
-      applyLobbyUpdate(data);
-
-      // Reload players after broadcast to ensure sync
-      if (setPlayersCallback && data && typeof (data as { id?: string }).id === 'string') {
+      
+      // Extract the actual lobby data from broadcast payload
+      const payloadObj = payload as Record<string, unknown>;
+      const record = payloadObj?.record ?? payloadObj?.new ?? payloadObj?.NEW ?? payload;
+      console.debug('RESOLVED DATA', record);
+      
+      // Always reload fresh data from database to ensure sync
+      if (record && typeof (record as { id?: string }).id === 'string') {
         try {
-          const lobbyId = (data as { id: string }).id;
-          const { data: playersData } = await supabase
-            .from("players")
+          const recordLobbyId = (record as { id: string }).id;
+          console.debug('[BROADCAST] Reloading lobby from database:', recordLobbyId);
+          
+          // Reload lobby
+          const { data: freshLobby } = await supabase
+            .from("lobbies")
             .select("*")
-            .eq("lobby_id", lobbyId)
-            .order("joined_at", { ascending: true });
-          setPlayersCallback(playersData as Player[] || []);
+            .eq("id", recordLobbyId)
+            .single();
+          
+          if (freshLobby) {
+            console.debug('[BROADCAST] Fresh lobby loaded:', freshLobby);
+            applyLobbyUpdate(freshLobby);
+          }
+          
+          // Reload players
+          if (setPlayersCallback) {
+            const { data: playersData } = await supabase
+              .from("players")
+              .select("*")
+              .eq("lobby_id", recordLobbyId)
+              .order("joined_at", { ascending: true });
+            if (playersData) {
+              console.debug('[BROADCAST] Fresh players loaded:', playersData.length);
+              setPlayersCallback(playersData as Player[]);
+            }
+          }
         } catch (err) {
-          console.warn('Failed to reload players after broadcast', err);
+          console.error('Failed to reload after broadcast', err);
         }
       }
     });
