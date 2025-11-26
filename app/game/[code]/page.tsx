@@ -1040,7 +1040,7 @@ function GamePage() {
   }
 
   const currentPlayer = players.find((p) => p.id === lobby.current_player_id);
-  const allCardsDrawn = lobby.deck.every((card) => card.drawn);
+  const allCardsDrawn = Array.isArray(lobby?.deck) ? lobby.deck.every((card) => card.drawn) : false;
 
   return (
     <div
