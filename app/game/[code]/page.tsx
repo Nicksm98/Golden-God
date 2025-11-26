@@ -7,21 +7,24 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 function createLobbySubscriber(
   supabase: SupabaseClient,
   lobbyId: string,
-  handlePayload: (data: { event: string; payload: unknown }) => void
+  applyLobbyUpdate: (data: unknown) => void
 ) {
-  const topic = `room:${lobbyId}:state`;
+  const topic = `room:${lobbyId}`;
   let channel: ReturnType<SupabaseClient['channel']> | null = null;
   let attempts = 0;
   let backoffTimer: ReturnType<typeof setTimeout> | null = null;
   let isUnsubscribing = false;
 
   const subscribe = () => {
-    if (channel && (channel as any).state === 'SUBSCRIBED') return;
-    if (channel && ((channel as any).state === 'SUBSCRIBING' || (channel as any).state === 'PENDING')) return;
+    if (channel && (channel as unknown as { state?: string }).state === 'SUBSCRIBED') return;
+    if (channel && ((channel as unknown as { state?: string }).state === 'SUBSCRIBING' || (channel as unknown as { state?: string }).state === 'PENDING')) return;
 
     channel = supabase.channel(topic, { config: { private: true } });
-    channel.on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
-      handlePayload({ event, payload });
+    channel.on('broadcast', { event: '*' }, ({ payload }: { event: string; payload: unknown }) => {
+      // broadcast_changes sends structured payload with NEW/OLD
+      const p = payload as Record<string, unknown>;
+      const data = p?.new ?? p?.NEW ?? payload;
+      applyLobbyUpdate(data);
     });
     channel.subscribe((status: string) => {
       console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
@@ -486,9 +489,9 @@ function GamePage() {
     const lobbyId = lobby.id;
     console.log("[SUBSCRIPTION] Setting up broadcast subscription for lobby:", lobbyId);
 
-    const subscriber = createLobbySubscriber(supabase, lobbyId, ({ payload }) => {
-      if (typeof payload === "object" && payload && "NEW" in payload) {
-        setLobby((payload as { NEW: Lobby }).NEW);
+    const subscriber = createLobbySubscriber(supabase, lobbyId, (data) => {
+      if (typeof data === "object" && data) {
+        setLobby(data as Lobby);
       }
     });
 
