@@ -1407,21 +1407,22 @@ function GamePage() {
           onCardAction={handleCardAction}
           onDaymanSelection={() => setDaymanSelectingNightman(true)}
           onAdvanceTurn={async () => {
+            console.log("[TURN] onAdvanceTurn called", { lobby, drawnCard });
             if (lobby && drawnCard) {
               const drawerPlayer = players.find((p) => p.name === drawnCard.drawnBy);
               if (!drawerPlayer) {
-                console.error("Could not find player who drew card:", drawnCard.drawnBy);
+                console.error("[TURN] Could not find player who drew card:", drawnCard.drawnBy);
                 return;
               }
-              
+
               const drawerIndex = players.findIndex((p) => p.id === drawerPlayer.id);
               const nextPlayerIndex = (drawerIndex + 1) % players.length;
               const nextPlayer = players[nextPlayerIndex];
-              
+
               const isFirstTurn = !lobby.current_player_id;
               const nextTurnNumber = isFirstTurn ? 1 : lobby.turn_number + 1;
-              
-              console.log("Advancing turn:", {
+
+              console.log("[TURN] Advancing turn", {
                 drawer: drawnCard.drawnBy,
                 drawerIndex,
                 nextPlayer: nextPlayer.name,
@@ -1429,14 +1430,22 @@ function GamePage() {
                 isFirstTurn,
                 nextTurnNumber,
               });
-              
-              await supabase
+
+              const { error, data } = await supabase
                 .from("lobbies")
                 .update({
                   current_player_id: nextPlayer.id,
                   turn_number: nextTurnNumber,
                 })
                 .eq("id", lobby.id);
+
+              if (error) {
+                console.error("[TURN] Supabase update error:", error);
+              } else {
+                console.log("[TURN] Supabase update success:", data);
+              }
+            } else {
+              console.warn("[TURN] onAdvanceTurn called but lobby or drawnCard missing", { lobby, drawnCard });
             }
           }}
         />
