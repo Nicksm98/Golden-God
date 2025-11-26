@@ -2,16 +2,23 @@
 "use client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-function subscribeToLobbyBroadcast(
+
+// Single subscription manager per lobby
+function createLobbySubscriber(
   supabase: SupabaseClient,
   lobbyId: string,
   handlePayload: (data: { event: string; payload: unknown }) => void
 ) {
   const topic = `room:${lobbyId}:state`;
-  let channel = supabase.channel(topic, { config: { private: true } });
-  let reconnectAttempts = 0;
+  let channel: ReturnType<SupabaseClient['channel']> | null = null;
+  let attempts = 0;
+  let backoffTimer: ReturnType<typeof setTimeout> | null = null;
+  let isUnsubscribing = false;
 
   const subscribe = () => {
+    if (channel && (channel as any).state === 'SUBSCRIBED') return;
+    if (channel && ((channel as any).state === 'SUBSCRIBING' || (channel as any).state === 'PENDING')) return;
+
     channel = supabase.channel(topic, { config: { private: true } });
     channel.on('broadcast', { event: '*' }, ({ event, payload }: { event: string; payload: unknown }) => {
       handlePayload({ event, payload });
@@ -19,23 +26,47 @@ function subscribeToLobbyBroadcast(
     channel.subscribe((status: string) => {
       console.debug('[SUBSCRIPTION]', topic, 'Status:', status);
       if (status === 'SUBSCRIBED') {
-        reconnectAttempts = 0;
-      } else if (status === 'TIMED_OUT' || status === 'CLOSED') {
-        reconnectAttempts += 1;
-        const delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempts));
+        attempts = 0;
+        if (backoffTimer) { clearTimeout(backoffTimer); backoffTimer = null; }
+      }
+      if (status === 'CLOSED' || status === 'TIMED_OUT' || status === 'ERROR') {
+        if (isUnsubscribing) return;
+        attempts += 1;
+        const delay = Math.min(30000, 500 * Math.pow(2, attempts));
         console.warn(`[SUBSCRIPTION] ${topic} ${status}. Reconnecting in ${delay}ms`);
-        setTimeout(() => {
-          try { supabase.removeChannel(channel); } catch {}
-          subscribe();
+        if (backoffTimer) clearTimeout(backoffTimer);
+        backoffTimer = setTimeout(() => {
+          try {
+            isUnsubscribing = true;
+            supabase.removeChannel(channel!);
+          } catch (e) {
+            console.warn('removeChannel error', e);
+          } finally {
+            isUnsubscribing = false;
+            subscribe();
+          }
         }, delay);
       }
     });
   };
+
+  const unsubscribe = async () => {
+    if (!channel) return;
+    isUnsubscribing = true;
+    try {
+      await supabase.removeChannel(channel);
+    } catch (e) {
+      console.warn('removeChannel error', e);
+    } finally {
+      channel = null;
+      isUnsubscribing = false;
+      if (backoffTimer) { clearTimeout(backoffTimer); backoffTimer = null; }
+    }
+  };
+
   subscribe();
 
-  return () => {
-    try { supabase.removeChannel(channel); } catch {}
-  };
+  return { unsubscribe, subscribe };
 }
 
 import { useEffect, useState, useCallback } from "react";
@@ -455,7 +486,7 @@ function GamePage() {
     const lobbyId = lobby.id;
     console.log("[SUBSCRIPTION] Setting up broadcast subscription for lobby:", lobbyId);
 
-    const unsubscribe = subscribeToLobbyBroadcast(supabase, lobbyId, ({ payload }: { event: string; payload: unknown }) => {
+    const subscriber = createLobbySubscriber(supabase, lobbyId, ({ payload }) => {
       if (typeof payload === "object" && payload && "NEW" in payload) {
         setLobby((payload as { NEW: Lobby }).NEW);
       }
@@ -463,7 +494,7 @@ function GamePage() {
 
     return () => {
       console.log("[SUBSCRIPTION] Cleaning up broadcast subscription for lobby:", lobbyId);
-      unsubscribe();
+      subscriber.unsubscribe();
     };
   }, [lobby?.id, supabase]);
 
