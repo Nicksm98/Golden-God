@@ -4,7 +4,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 
 // Single subscription manager per lobby
-import type { Player } from "@/lib/types";
 function createLobbySubscriber(
   supabase: SupabaseClient,
   lobbyId: string,
