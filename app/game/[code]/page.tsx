@@ -1434,9 +1434,30 @@ function GamePage() {
           onAdvanceTurn={async () => {
             console.log("[TURN] onAdvanceTurn called", { lobby, drawnCard });
             if (lobby && drawnCard) {
-              const drawerPlayer = players.find((p) => p.name === drawnCard.drawnBy);
+              console.log("[TURN] Current players array:", players.map(p => ({ id: p.id, name: p.name })));
+              console.log("[TURN] Looking for player with name:", drawnCard.drawnBy);
+              
+              let drawerPlayer = players.find((p) => p.name === drawnCard.drawnBy);
+              
+              // If player not found, reload players from database
+              if (!drawerPlayer) {
+                console.warn("[TURN] Player not found in local state, reloading from database...");
+                const { data: freshPlayers } = await supabase
+                  .from("players")
+                  .select("*")
+                  .eq("lobby_id", lobby.id)
+                  .order("joined_at", { ascending: true });
+                
+                if (freshPlayers && freshPlayers.length > 0) {
+                  setPlayers(freshPlayers);
+                  drawerPlayer = freshPlayers.find((p) => p.name === drawnCard.drawnBy);
+                  console.log("[TURN] Reloaded players, found:", drawerPlayer ? "YES" : "NO");
+                }
+              }
+              
               if (!drawerPlayer) {
                 console.error("[TURN] Could not find player who drew card:", drawnCard.drawnBy);
+                console.error("[TURN] Available players:", players.map(p => p.name));
                 return;
               }
 
