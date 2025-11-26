@@ -273,6 +273,26 @@ export default function LobbyPage() {
     const currentPlayer = players.find((p) => p.id === currentPlayerId);
     if (!currentPlayer?.is_host) return;
 
+    const suits = ["S", "H", "C", "D"];
+    const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "0", "J", "Q", "K"];
+    const newDeck: Array<{code: string; drawn: boolean; drawnBy: string | null; position: number}> = [];
+
+    for (const suit of suits) {
+      for (const rank of ranks) {
+        newDeck.push({
+          code: rank + suit,
+          drawn: false,
+          drawnBy: null,
+          position: newDeck.length,
+        });
+      }
+    }
+
+    for (let i = newDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
+    }
+
     const randomPlayer = players[Math.floor(Math.random() * players.length)];
 
     try {
@@ -280,8 +300,25 @@ export default function LobbyPage() {
         .from("lobbies")
         .update({ 
           status: "playing",
+          deck: newDeck,
           current_player_id: randomPlayer.id,
-          turn_number: 0
+          turn_number: 0,
+          active_prompt: null,
+          word_game: null,
+          rps_game: null,
+          mate: null,
+          golden_god_redirects: null,
+          uncle_jack_uses: null,
+          mac_action_uses: null,
+          mac_last_action_turn: null,
+          frank_performances: null,
+          dayman_nightman: null,
+          gino_swaps_used: null,
+          snail_player: null,
+          cricket_denials: null,
+          bruce_voting: null,
+          game_stats: null,
+          non_binary_passes: null,
         })
         .eq("id", lobby.id);
 

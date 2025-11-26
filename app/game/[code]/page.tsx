@@ -724,13 +724,6 @@ function GamePage() {
       return;
     }
 
-    console.log("Draw card attempt:", {
-      yourPlayerId: currentPlayerId,
-      currentTurnPlayerId: lobby.current_player_id,
-      isYourTurn: lobby.current_player_id === currentPlayerId,
-      players: players.map((p) => ({ id: p.id, name: p.name })),
-    });
-
     if (lobby.current_player_id && lobby.current_player_id !== currentPlayerId) {
       const currentTurnPlayer = players.find(
         (p) => p.id === lobby.current_player_id
@@ -759,8 +752,6 @@ function GamePage() {
     );
 
     try {
-      console.log("Starting card draw process for card:", card.code);
-      
       setIsDrawingCard(true);
       setTimeout(() => setIsDrawingCard(false), 600);
       
@@ -779,8 +770,6 @@ function GamePage() {
         ? updatePlayerStats(currentStats, currentPlayer.name, "faceCard", 1)
         : currentStats;
 
-      console.log("Updating lobby deck and turn info...");
-      
       const updatePayload: Record<string, unknown> = {
         deck: updatedDeck,
         dayman_nightman: updatedDaymanNightman,
@@ -800,8 +789,6 @@ function GamePage() {
         throw updateError;
       }
 
-      console.log("Lobby updated successfully, showing drawn card...");
-      
       playSound("card-flip");
       
       logGameEvent(lobby.id, "card_drawn", currentPlayer.name, {
@@ -880,6 +867,8 @@ function GamePage() {
           }
         }
       }
+        // Always trigger card action after drawing
+        await handleCardAction(rank, card.code, currentPlayer.name, currentPlayerIndex);
     } catch (err) {
       console.error("Error drawing card:", err);
       showToast("Failed to draw card. Please try again.", "error");
