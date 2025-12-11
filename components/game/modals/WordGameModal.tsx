@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Player } from "@/lib/types";
@@ -285,12 +286,14 @@ export function WordGameModal({
   addMatesToDrinkList,
 }: WordGameModalProps) {
   const supabase = createClient();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Safety check - should never happen due to conditional rendering, but prevents race conditions
   if (!wordGame) return null;
 
   const handleSubmit = async (value: string) => {
-    if (!value || !wordGame) return;
+    if (!value || !wordGame || isProcessing) return;
+    setIsProcessing(true);
 
     if (wordGame.type === "7-episodes") {
       const { match: isValid, closestEpisode } = isCloseMatch(value, ALWAYS_SUNNY_EPISODES);
@@ -410,7 +413,9 @@ export function WordGameModal({
   };
 
   const handleCantAnswer = async () => {
-    if (!wordGame) return;
+    if (!wordGame || isProcessing) return;
+    setIsProcessing(true);
+    
     const currentPlayer = players[wordGame.currentPlayerIndex];
     const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
     
@@ -442,13 +447,14 @@ export function WordGameModal({
   };
 
   const handleChallenge = async () => {
-    if (!wordGame || wordGame.usedWords.length === 0) return;
+    if (!wordGame || wordGame.usedWords.length === 0 || isProcessing) return;
     const lastAnswer = wordGame.usedWords[wordGame.usedWords.length - 1];
     const confirm = window.confirm(
       `Challenge "${lastAnswer}"? If you're right, the player who said it drinks!`
     );
     
     if (!confirm) return;
+    setIsProcessing(true);
 
     const previousPlayerIndex =
       (wordGame.currentPlayerIndex - 1 + players.length) % players.length;
@@ -482,7 +488,9 @@ export function WordGameModal({
   };
 
   const handleEndGame = async () => {
-    if (!wordGame) return;
+    if (!wordGame || isProcessing) return;
+    setIsProcessing(true);
+    
     // Just clear the word game without advancing turn
     // Turn should only advance when someone fails
     await supabase
@@ -575,6 +583,7 @@ export function WordGameModal({
               placeholder={getPlaceholder()}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
               id="word-game-input"
+              disabled={isProcessing}
               onKeyDown={async (e) => {
                 if (e.key === "Enter") {
                   const value = e.currentTarget.value.trim();
@@ -593,13 +602,15 @@ export function WordGameModal({
                   if (input) input.value = "";
                   if (value) await handleSubmit(value);
                 }}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all"
+                disabled={isProcessing}
+                className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all"
               >
                 Submit
               </Button>
               <Button
                 onClick={handleCantAnswer}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-all"
+                disabled={isProcessing}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-3 px-6 rounded-lg transition-all"
               >
                 I Don&apos;t Know
               </Button>
@@ -613,7 +624,8 @@ export function WordGameModal({
 
         <Button
           onClick={handleEndGame}
-          className="mt-6 w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-all"
+          disabled={isProcessing}
+          className="mt-6 w-full bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-all"
         >
           End Game
         </Button>
