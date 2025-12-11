@@ -4,6 +4,57 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Player } from "@/lib/types";
 
+// Calculate Levenshtein distance for fuzzy string matching
+function levenshteinDistance(str1: string, str2: string): number {
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= len1; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= len2; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= len1; i++) {
+    for (let j = 1; j <= len2; j++) {
+      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return matrix[len1][len2];
+}
+
+// Check if input is close enough to any episode (allows for typos)
+function isCloseMatch(input: string, episodes: string[]): { match: boolean; closestEpisode?: string } {
+  const normalizedInput = input.toLowerCase().trim();
+  
+  // First check for exact match
+  const exactMatch = episodes.find(ep => ep.toLowerCase() === normalizedInput);
+  if (exactMatch) {
+    return { match: true, closestEpisode: exactMatch };
+  }
+  
+  // Calculate dynamic max distance based on input length
+  // More lenient for longer episode names
+  const maxDistance = Math.max(3, Math.floor(normalizedInput.length * 0.25));
+  
+  for (const episode of episodes) {
+    const distance = levenshteinDistance(normalizedInput, episode.toLowerCase());
+    if (distance <= maxDistance) {
+      return { match: true, closestEpisode: episode };
+    }
+  }
+  
+  return { match: false };
+}
+
 const ALWAYS_SUNNY_EPISODES = [
   "The Gang Gets Racist",
   "Charlie Wants an Abortion",
@@ -217,21 +268,78 @@ export function WordGameModal({
     if (!value) return;
 
     if (wordGame.type === "7-episodes") {
-      const isValid = ALWAYS_SUNNY_EPISODES.some(
-        (ep) => ep.toLowerCase() === value.toLowerCase()
-      );
+      const { match: isValid, closestEpisode } = isCloseMatch(value, ALWAYS_SUNNY_EPISODES);
       const isRepeat = wordGame.usedWords.some(
-        (w) => w.toLowerCase() === value.toLowerCase()
+        (w) => w.toLowerCase() === closestEpisode?.toLowerCase() || w.toLowerCase() === value.toLowerCase()
       );
 
       if (!isValid) {
         alert("That's not a valid Always Sunny episode!");
+        // Player failed - end game and advance turn
+        const currentPlayer = players[wordGame.currentPlayerIndex];
+        const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
+        
+        const currentPlayerIndex = players.findIndex(
+          (p) => p.id === currentLobbyPlayerId
+        );
+        const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        const nextPlayer = players[nextPlayerIndex];
+        
+        await supabase
+          .from("lobbies")
+          .update({
+            active_prompt: {
+              type: "drink",
+              card_code: "7S",
+              drawn_by: currentPlayer.name,
+              data: {
+                players: failedDrinkers,
+                message: `${currentPlayer.name} gave an invalid episode - Drink!`,
+              },
+              confirmed_players: [],
+            },
+            word_game: null,
+            current_player_id: nextPlayer.id,
+            turn_number: turnNumber + 1,
+          })
+          .eq("id", lobbyId);
         return;
       }
       if (isRepeat) {
-        alert("That episode was already used! You get one more chance.");
+        alert("That episode was already used!");
+        // Player failed - end game and advance turn
+        const currentPlayer = players[wordGame.currentPlayerIndex];
+        const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
+        
+        const currentPlayerIndex = players.findIndex(
+          (p) => p.id === currentLobbyPlayerId
+        );
+        const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+        const nextPlayer = players[nextPlayerIndex];
+        
+        await supabase
+          .from("lobbies")
+          .update({
+            active_prompt: {
+              type: "drink",
+              card_code: "7S",
+              drawn_by: currentPlayer.name,
+              data: {
+                players: failedDrinkers,
+                message: `${currentPlayer.name} repeated an episode - Drink!`,
+              },
+              confirmed_players: [],
+            },
+            word_game: null,
+            current_player_id: nextPlayer.id,
+            turn_number: turnNumber + 1,
+          })
+          .eq("id", lobbyId);
         return;
       }
+      
+      // Use the matched episode name for consistency
+      value = closestEpisode || value;
     }
 
     if (wordGame.type === "9-rhyme" && wordGame.currentWord) {
@@ -279,6 +387,14 @@ export function WordGameModal({
   const handleCantAnswer = async () => {
     const currentPlayer = players[wordGame.currentPlayerIndex];
     const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
+    
+    // Advance to next turn
+    const currentPlayerIndex = players.findIndex(
+      (p) => p.id === currentLobbyPlayerId
+    );
+    const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    const nextPlayer = players[nextPlayerIndex];
+    
     await supabase
       .from("lobbies")
       .update({
@@ -293,6 +409,8 @@ export function WordGameModal({
           confirmed_players: [],
         },
         word_game: null,
+        current_player_id: nextPlayer.id,
+        turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
   };
@@ -308,6 +426,13 @@ export function WordGameModal({
     const previousPlayerIndex =
       (wordGame.currentPlayerIndex - 1 + players.length) % players.length;
     const challengedPlayer = players[previousPlayerIndex];
+    
+    // Advance to next turn
+    const currentPlayerIndex = players.findIndex(
+      (p) => p.id === currentLobbyPlayerId
+    );
+    const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    const nextPlayer = players[nextPlayerIndex];
 
     await supabase
       .from("lobbies")
@@ -323,6 +448,8 @@ export function WordGameModal({
           confirmed_players: [],
         },
         word_game: null,
+        current_player_id: nextPlayer.id,
+        turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
   };
