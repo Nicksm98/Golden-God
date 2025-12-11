@@ -41,18 +41,40 @@ function isCloseMatch(input: string, episodes: string[]): { match: boolean; clos
     return { match: true, closestEpisode: exactMatch };
   }
   
-  // Calculate dynamic max distance based on input length
-  // More lenient for longer episode names
-  const maxDistance = Math.max(3, Math.floor(normalizedInput.length * 0.25));
+  // Much more lenient matching - allow up to 35% character differences
+  // This handles abbreviations like "d makes a smt fim" for "Dee Made a Smut Film"
+  const maxDistance = Math.max(4, Math.floor(normalizedInput.length * 0.35));
+  
+  let bestMatch: { episode: string; distance: number } | null = null;
   
   for (const episode of episodes) {
     const distance = levenshteinDistance(normalizedInput, episode.toLowerCase());
     if (distance <= maxDistance) {
-      return { match: true, closestEpisode: episode };
+      if (!bestMatch || distance < bestMatch.distance) {
+        bestMatch = { episode, distance };
+      }
     }
   }
   
-  return { match: false };
+  // Also try matching against episode without "The Gang" prefix for convenience
+  if (!bestMatch) {
+    const inputWithoutCommon = normalizedInput.replace(/^(the gang |gang |the )/i, '');
+    const relaxedMaxDistance = Math.max(5, Math.floor(inputWithoutCommon.length * 0.4));
+    
+    for (const episode of episodes) {
+      const episodeWithoutPrefix = episode.toLowerCase().replace(/^the gang /i, '');
+      const distance = levenshteinDistance(inputWithoutCommon, episodeWithoutPrefix);
+      if (distance <= relaxedMaxDistance) {
+        if (!bestMatch || distance < bestMatch.distance) {
+          bestMatch = { episode, distance };
+        }
+      }
+    }
+  }
+  
+  return bestMatch 
+    ? { match: true, closestEpisode: bestMatch.episode }
+    : { match: false };
 }
 
 const ALWAYS_SUNNY_EPISODES = [
@@ -264,8 +286,11 @@ export function WordGameModal({
 }: WordGameModalProps) {
   const supabase = createClient();
 
+  // Safety check - should never happen due to conditional rendering, but prevents race conditions
+  if (!wordGame) return null;
+
   const handleSubmit = async (value: string) => {
-    if (!value) return;
+    if (!value || !wordGame) return;
 
     if (wordGame.type === "7-episodes") {
       const { match: isValid, closestEpisode } = isCloseMatch(value, ALWAYS_SUNNY_EPISODES);
@@ -385,6 +410,7 @@ export function WordGameModal({
   };
 
   const handleCantAnswer = async () => {
+    if (!wordGame) return;
     const currentPlayer = players[wordGame.currentPlayerIndex];
     const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
     
@@ -416,6 +442,7 @@ export function WordGameModal({
   };
 
   const handleChallenge = async () => {
+    if (!wordGame || wordGame.usedWords.length === 0) return;
     const lastAnswer = wordGame.usedWords[wordGame.usedWords.length - 1];
     const confirm = window.confirm(
       `Challenge "${lastAnswer}"? If you're right, the player who said it drinks!`
@@ -455,18 +482,13 @@ export function WordGameModal({
   };
 
   const handleEndGame = async () => {
-    const currentPlayerIndex = players.findIndex(
-      (p) => p.id === currentLobbyPlayerId
-    );
-    const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-    const nextPlayer = players[nextPlayerIndex];
-
+    if (!wordGame) return;
+    // Just clear the word game without advancing turn
+    // Turn should only advance when someone fails
     await supabase
       .from("lobbies")
       .update({
         word_game: null,
-        current_player_id: nextPlayer.id,
-        turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
   };

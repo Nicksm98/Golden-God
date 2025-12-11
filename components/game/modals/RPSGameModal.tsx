@@ -197,6 +197,28 @@ export function RPSGameModal({
   const isPlayer2 = currentPlayerId === players.find((p) => p.name === rpsGame.player2)?.id;
   const isParticipant = isPlayer1 || isPlayer2;
 
+  // Display names and scores from the current player's perspective
+  const getDisplayNames = () => {
+    if (isPlayer1) {
+      return { yourName: rpsGame.player1, opponentName: rpsGame.player2 };
+    } else if (isPlayer2) {
+      return { yourName: rpsGame.player2, opponentName: rpsGame.player1 };
+    }
+    return { yourName: rpsGame.player1, opponentName: rpsGame.player2 };
+  };
+
+  const getDisplayScore = () => {
+    if (isPlayer1) {
+      return { yourScore: rpsGame.player1_score, opponentScore: rpsGame.player2_score };
+    } else if (isPlayer2) {
+      return { yourScore: rpsGame.player2_score, opponentScore: rpsGame.player1_score };
+    }
+    return { yourScore: rpsGame.player1_score, opponentScore: rpsGame.player2_score };
+  };
+
+  const { yourName, opponentName } = getDisplayNames();
+  const { yourScore, opponentScore } = getDisplayScore();
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-60 animate-in fade-in duration-200">
       <div className="bg-white rounded-lg p-8 shadow-2xl max-w-3xl w-full mx-4">
@@ -205,13 +227,13 @@ export function RPSGameModal({
         </h2>
         <div className="text-center mb-6">
           <p className="text-xl font-semibold">
-            {rpsGame.player1} vs {rpsGame.player2}
+            {yourName} vs {opponentName}
           </p>
           <p className="text-lg text-gray-600 mt-2">
             Round {rpsGame.round} - First to 2 wins!
           </p>
           <p className="text-2xl font-bold mt-4">
-            Score: {rpsGame.player1_score} - {rpsGame.player2_score}
+            Score: {yourScore} - {opponentScore}
           </p>
         </div>
 
