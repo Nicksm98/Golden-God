@@ -32,7 +32,7 @@ export function ChoosePlayerModal({
   const handlePlayerSelect = async (player: Player) => {
     if (activePrompt.data?.action === "drink") {
       const drinkPlayers = addMatesToDrinkList([player.name]);
-      await supabase
+      const { error } = await supabase
         .from("lobbies")
         .update({
           active_prompt: {
@@ -44,7 +44,11 @@ export function ChoosePlayerModal({
           },
         })
         .eq("id", lobbyId);
-
+      
+      if (!error) {
+        // Small delay then reload page to ensure change is visible
+        setTimeout(() => window.location.reload(), 200);
+      }
     } else if (activePrompt.data?.action === "rps") {
       const drawerPlayer = players.find((p) => p.name === drawerName);
       if (!drawerPlayer) {
@@ -63,7 +67,7 @@ export function ChoosePlayerModal({
         nextPlayerIndex,
       });
 
-      await supabase
+      const { error } = await supabase
         .from("lobbies")
         .update({
           rps_game: {
@@ -79,7 +83,11 @@ export function ChoosePlayerModal({
           turn_number: turnNumber + 1,
         })
         .eq("id", lobbyId);
-
+      
+      if (!error) {
+        // Small delay then reload page to ensure change is visible
+        setTimeout(() => window.location.reload(), 200);
+      }
     }
   };
 
@@ -101,7 +109,7 @@ export function ChoosePlayerModal({
       nextPlayerIndex,
     });
 
-    await supabase
+    const { error } = await supabase
       .from("lobbies")
       .update({
         active_prompt: null,
@@ -109,7 +117,11 @@ export function ChoosePlayerModal({
         turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
-
+    
+    if (!error) {
+      // Small delay then reload page to ensure change is visible
+      setTimeout(() => window.location.reload(), 200);
+    }
   };
 
   return (
