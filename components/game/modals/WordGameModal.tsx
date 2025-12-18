@@ -484,18 +484,7 @@ export function WordGameModal({
 
   };
 
-  const handleEndGame = async () => {
-    if (!wordGame || isProcessing) return;
-    setIsProcessing(true);
-    
-    await supabase
-      .from("lobbies")
-      .update({
-        word_game: null,
-      })
-      .eq("id", lobbyId);
 
-  };
 
   const isCurrentPlayer = currentPlayerId === players[wordGame.currentPlayerIndex]?.id;
 
@@ -617,14 +606,6 @@ export function WordGameModal({
             Waiting for {players[wordGame.currentPlayerIndex]?.name} to answer...
           </p>
         )}
-
-        <Button
-          onClick={handleEndGame}
-          disabled={isProcessing}
-          className="mt-6 w-full bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-all"
-        >
-          End Game
-        </Button>
       </div>
     </div>
   );

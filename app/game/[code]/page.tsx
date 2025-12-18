@@ -1255,9 +1255,14 @@ function GamePage() {
               }`}
             >
               <div className="flex justify-between items-center">
-                <span className="text-white font-semibold text-sm">
-                  {player.name}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-semibold text-sm">
+                    {player.name}
+                  </span>
+                  <span className="text-white/70 text-xs">
+                    🃏 {lobby.deck.filter((c) => c.drawnBy === player.name).length}
+                  </span>
+                </div>
                 {player.id === currentPlayerId && (
                   <span className="text-green-300 text-xs font-bold">YOU</span>
                 )}
