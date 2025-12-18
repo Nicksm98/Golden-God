@@ -24,6 +24,16 @@ export function ChoosePlayerModal({
 }: ChoosePlayerModalProps) {
   const supabase = createClient();
 
+  const broadcastChange = async () => {
+    const channel = supabase.channel(`room:${lobbyId}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'lobby_update',
+      payload: { id: lobbyId }
+    });
+    await supabase.removeChannel(channel);
+  };
+
   const promptData = activePrompt as unknown as Record<string, unknown>;
   const drawerName = (promptData.drawn_by || promptData.drawnBy) as string;
   const isDrawer =
@@ -44,6 +54,7 @@ export function ChoosePlayerModal({
           },
         })
         .eq("id", lobbyId);
+      await broadcastChange();
     } else if (activePrompt.data?.action === "rps") {
       const drawerPlayer = players.find((p) => p.name === drawerName);
       if (!drawerPlayer) {
@@ -78,6 +89,7 @@ export function ChoosePlayerModal({
           turn_number: turnNumber + 1,
         })
         .eq("id", lobbyId);
+      await broadcastChange();
     }
   };
 
@@ -107,6 +119,7 @@ export function ChoosePlayerModal({
         turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
+    await broadcastChange();
   };
 
   return (

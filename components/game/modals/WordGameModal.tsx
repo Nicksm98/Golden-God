@@ -288,6 +288,17 @@ export function WordGameModal({
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const broadcastChange = async () => {
+    // Send a broadcast to notify all clients of the change
+    const channel = supabase.channel(`room:${lobbyId}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'lobby_update',
+      payload: { id: lobbyId }
+    });
+    await supabase.removeChannel(channel);
+  };
+
   // Reset processing state when the current player changes
   useEffect(() => {
     setIsProcessing(false);
@@ -336,6 +347,7 @@ export function WordGameModal({
             turn_number: turnNumber + 1,
           })
           .eq("id", lobbyId);
+        await broadcastChange();
         return;
       }
       if (isRepeat) {
@@ -368,6 +380,7 @@ export function WordGameModal({
             turn_number: turnNumber + 1,
           })
           .eq("id", lobbyId);
+        await broadcastChange();
         return;
       }
       
@@ -417,6 +430,7 @@ export function WordGameModal({
         },
       })
       .eq("id", lobbyId);
+    await broadcastChange();
     
     // Reset processing state after successful submission
     setIsProcessing(false);
@@ -454,6 +468,7 @@ export function WordGameModal({
         turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
+    await broadcastChange();
   };
 
   const handleChallenge = async () => {
@@ -495,6 +510,7 @@ export function WordGameModal({
         turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
+    await broadcastChange();
   };
 
   const handleEndGame = async () => {
@@ -509,6 +525,7 @@ export function WordGameModal({
         word_game: null,
       })
       .eq("id", lobbyId);
+    await broadcastChange();
   };
 
   const isCurrentPlayer = currentPlayerId === players[wordGame.currentPlayerIndex]?.id;
