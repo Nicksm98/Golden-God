@@ -55,17 +55,6 @@ export function MacPlayerSelectionModal({
     protein: "Select a player to share your drink with",
   };
 
-  const broadcastChange = async () => {
-    // Send a broadcast to notify all clients of the change
-    const channel = supabase.channel(`room:${lobbyId}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'lobby_update',
-      payload: { id: lobbyId }
-    });
-    await supabase.removeChannel(channel);
-  };
-
   const handlePlayerSelect = async (player: Player) => {
     const newUses = {
       ...macUses,
@@ -109,7 +98,7 @@ export function MacPlayerSelectionModal({
         console.error("[MAC ACTION] Failed to update counter:", error);
       } else {
         console.log("[MAC ACTION] Counter update successful");
-        await broadcastChange();
+
       }
     } else if (macAction === "confession") {
       const { error } = await supabase
@@ -137,7 +126,7 @@ export function MacPlayerSelectionModal({
         console.error("[MAC ACTION] Failed to update counter:", error);
       } else {
         console.log("[MAC ACTION] Counter update successful");
-        await broadcastChange();
+
       }
     } else if (macAction === "challenge") {
       const macRoll = rollDice();
@@ -168,7 +157,7 @@ export function MacPlayerSelectionModal({
           console.error("[MAC ACTION] Failed to update counter:", error);
         } else {
           console.log("[MAC ACTION] Counter update successful");
-          await broadcastChange();
+
         }
       } else {
         const loser = macRoll > targetRoll ? player.name : macPlayer.name;
@@ -196,7 +185,7 @@ export function MacPlayerSelectionModal({
           console.error("[MAC ACTION] Failed to update counter:", error);
         } else {
           console.log("[MAC ACTION] Counter update successful");
-          await broadcastChange();
+
         }
       }
     } else if (macAction === "protein" && activePrompt) {
@@ -225,7 +214,7 @@ export function MacPlayerSelectionModal({
           console.error("[MAC ACTION] Failed to update counter:", error);
         } else {
           console.log("[MAC ACTION] Counter update successful");
-          await broadcastChange();
+
         }
       } else {
         const { error } = await supabase
@@ -252,7 +241,7 @@ export function MacPlayerSelectionModal({
           console.error("[MAC ACTION] Failed to update counter:", error);
         } else {
           console.log("[MAC ACTION] Counter update successful");
-          await broadcastChange();
+
         }
       }
     }

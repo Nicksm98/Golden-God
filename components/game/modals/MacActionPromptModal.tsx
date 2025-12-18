@@ -19,17 +19,6 @@ export function MacActionPromptModal({
 }: MacActionPromptModalProps) {
   const supabase = createClient();
 
-  const broadcastChange = async () => {
-    // Send a broadcast to notify all clients of the change
-    const channel = supabase.channel(`room:${lobbyId}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'lobby_update',
-      payload: { id: lobbyId }
-    });
-    await supabase.removeChannel(channel);
-  };
-
   const targetName = activePrompt.data?.target;
   const macPlayer = activePrompt.data?.mac_player;
   const action = activePrompt.data?.action;
@@ -69,7 +58,7 @@ export function MacActionPromptModal({
         },
       })
       .eq("id", lobbyId);
-    await broadcastChange();
+
   };
 
   const handleDrink = async () => {
@@ -94,7 +83,7 @@ export function MacActionPromptModal({
         },
       })
       .eq("id", lobbyId);
-    await broadcastChange();
+
   };
 
   return (

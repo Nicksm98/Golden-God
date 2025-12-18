@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Player } from "@/lib/types";
 
-// Calculate Levenshtein distance for fuzzy string matching
 function levenshteinDistance(str1: string, str2: string): number {
   const len1 = str1.length;
   const len2 = str2.length;
@@ -32,18 +31,14 @@ function levenshteinDistance(str1: string, str2: string): number {
   return matrix[len1][len2];
 }
 
-// Check if input is close enough to any episode (allows for typos)
 function isCloseMatch(input: string, episodes: string[]): { match: boolean; closestEpisode?: string } {
   const normalizedInput = input.toLowerCase().trim();
   
-  // First check for exact match
   const exactMatch = episodes.find(ep => ep.toLowerCase() === normalizedInput);
   if (exactMatch) {
     return { match: true, closestEpisode: exactMatch };
   }
   
-  // Much more lenient matching - allow up to 35% character differences
-  // This handles abbreviations like "d makes a smt fim" for "Dee Made a Smut Film"
   const maxDistance = Math.max(4, Math.floor(normalizedInput.length * 0.35));
   
   let bestMatch: { episode: string; distance: number } | null = null;
@@ -57,7 +52,6 @@ function isCloseMatch(input: string, episodes: string[]): { match: boolean; clos
     }
   }
   
-  // Also try matching against episode without "The Gang" prefix for convenience
   if (!bestMatch) {
     const inputWithoutCommon = normalizedInput.replace(/^(the gang |gang |the )/i, '');
     const relaxedMaxDistance = Math.max(5, Math.floor(inputWithoutCommon.length * 0.4));
@@ -288,23 +282,6 @@ export function WordGameModal({
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const broadcastChange = async () => {
-    // Send a broadcast to notify all clients of the change
-    const channel = supabase.channel(`room:${lobbyId}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'lobby_update',
-      payload: { id: lobbyId }
-    });
-    await supabase.removeChannel(channel);
-  };
-
-  // Reset processing state when the current player changes
-  useEffect(() => {
-    setIsProcessing(false);
-  }, [wordGame.currentPlayerIndex]);
-
-  // Safety check - should never happen due to conditional rendering, but prevents race conditions
   if (!wordGame) return null;
 
   const handleSubmit = async (value: string) => {
@@ -319,7 +296,6 @@ export function WordGameModal({
 
       if (!isValid) {
         alert("That's not a valid Always Sunny episode!");
-        // Player failed - end game and advance turn
         const currentPlayer = players[wordGame.currentPlayerIndex];
         const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
         
@@ -347,12 +323,11 @@ export function WordGameModal({
             turn_number: turnNumber + 1,
           })
           .eq("id", lobbyId);
-        await broadcastChange();
+
         return;
       }
       if (isRepeat) {
         alert("That episode was already used!");
-        // Player failed - end game and advance turn
         const currentPlayer = players[wordGame.currentPlayerIndex];
         const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
         
@@ -380,11 +355,10 @@ export function WordGameModal({
             turn_number: turnNumber + 1,
           })
           .eq("id", lobbyId);
-        await broadcastChange();
+
         return;
       }
       
-      // Use the matched episode name for consistency
       value = closestEpisode || value;
     }
 
@@ -394,7 +368,7 @@ export function WordGameModal({
       );
       if (isRepeat) {
         alert('That word was already used! Try again or click "I Don\'t Know"');
-        setIsProcessing(false); // Reset processing state so they can try again
+        setIsProcessing(false);
         return;
       }
     }
@@ -405,7 +379,7 @@ export function WordGameModal({
       );
       if (isRepeat) {
         alert('That answer was already used! Try again or click "I Don\'t Know"');
-        setIsProcessing(false); // Reset processing state so they can try again
+        setIsProcessing(false);
         return;
       }
     }
@@ -430,9 +404,8 @@ export function WordGameModal({
         },
       })
       .eq("id", lobbyId);
-    await broadcastChange();
+
     
-    // Reset processing state after successful submission
     setIsProcessing(false);
   };
 
@@ -443,7 +416,6 @@ export function WordGameModal({
     const currentPlayer = players[wordGame.currentPlayerIndex];
     const failedDrinkers = addMatesToDrinkList([currentPlayer.name]);
     
-    // Advance to next turn
     const currentPlayerIndex = players.findIndex(
       (p) => p.id === currentLobbyPlayerId
     );
@@ -468,7 +440,7 @@ export function WordGameModal({
         turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
-    await broadcastChange();
+
   };
 
   const handleChallenge = async () => {
@@ -485,7 +457,6 @@ export function WordGameModal({
       (wordGame.currentPlayerIndex - 1 + players.length) % players.length;
     const challengedPlayer = players[previousPlayerIndex];
     
-    // Advance to next turn
     const currentPlayerIndex = players.findIndex(
       (p) => p.id === currentLobbyPlayerId
     );
@@ -510,22 +481,20 @@ export function WordGameModal({
         turn_number: turnNumber + 1,
       })
       .eq("id", lobbyId);
-    await broadcastChange();
+
   };
 
   const handleEndGame = async () => {
     if (!wordGame || isProcessing) return;
     setIsProcessing(true);
     
-    // Just clear the word game without advancing turn
-    // Turn should only advance when someone fails
     await supabase
       .from("lobbies")
       .update({
         word_game: null,
       })
       .eq("id", lobbyId);
-    await broadcastChange();
+
   };
 
   const isCurrentPlayer = currentPlayerId === players[wordGame.currentPlayerIndex]?.id;

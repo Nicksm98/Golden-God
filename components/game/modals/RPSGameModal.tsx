@@ -23,16 +23,6 @@ export function RPSGameModal({
 }: RPSGameModalProps) {
   const supabase = createClient();
 
-  const broadcastChange = async () => {
-    const channel = supabase.channel(`room:${lobbyId}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'lobby_update',
-      payload: { id: lobbyId }
-    });
-    await supabase.removeChannel(channel);
-  };
-
   const handleChoice = async (choice: "rock" | "paper" | "scissors") => {
     const currentPlayer = players.find((p) => p.id === currentPlayerId);
     if (!currentPlayer) return;
@@ -55,7 +45,7 @@ export function RPSGameModal({
           },
         })
         .eq("id", lobbyId);
-      await broadcastChange();
+
     } else if (
       currentPlayer.name === rpsGame.player2 &&
       !rpsGame.player2_choice
@@ -74,7 +64,7 @@ export function RPSGameModal({
           },
         })
         .eq("id", lobbyId);
-      await broadcastChange();
+
     }
   };
 

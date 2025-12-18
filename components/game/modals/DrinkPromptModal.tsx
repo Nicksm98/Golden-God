@@ -29,17 +29,6 @@ export function DrinkPromptModal({
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const broadcastChange = async () => {
-    if (!lobby?.id) return;
-    const channel = supabase.channel(`room:${lobby.id}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'lobby_update',
-      payload: { id: lobby.id }
-    });
-    await supabase.removeChannel(channel);
-  };
-  
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const confirmedPlayers = activePrompt.confirmed_players || [];
   const drinkPlayers = Array.isArray(activePrompt.data?.players)
@@ -74,7 +63,7 @@ export function DrinkPromptModal({
       if (shouldSkipTurnAdvance) {
         console.log("Skipping turn advancement (Mac action or similar)");
         await supabase.from("lobbies").update({ active_prompt: null }).eq("id", lobby.id);
-        await broadcastChange();
+
         return;
       }
       
@@ -85,7 +74,7 @@ export function DrinkPromptModal({
         if (currentPlayerIndex === -1) {
           console.error("Could not find current player in players list");
           await supabase.from("lobbies").update({ active_prompt: null }).eq("id", lobby.id);
-          await broadcastChange();
+  
           return;
         }
         const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
@@ -98,7 +87,7 @@ export function DrinkPromptModal({
             turn_number: lobby.turn_number + 1,
           })
           .eq("id", lobby.id);
-        await broadcastChange();
+
         return;
       }
 
@@ -121,7 +110,7 @@ export function DrinkPromptModal({
           turn_number: lobby.turn_number + 1,
         })
         .eq("id", lobby.id);
-      await broadcastChange();
+
     } else {
       await supabase
         .from("lobbies")
@@ -132,7 +121,7 @@ export function DrinkPromptModal({
           },
         })
         .eq("id", lobby.id);
-      await broadcastChange();
+
     }
   }
 
@@ -205,7 +194,7 @@ export function DrinkPromptModal({
       console.error("Failed to use non-binary pass:", error.message);
       return;
     }
-    await broadcastChange();
+
   }
 
   async function handleGoldenGodRefuse() {
@@ -326,7 +315,7 @@ export function DrinkPromptModal({
     }
 
     await supabase.from("lobbies").update(updateData).eq("id", lobby.id);
-    await broadcastChange();
+
   }
 
   async function handleCricketDeny() {
