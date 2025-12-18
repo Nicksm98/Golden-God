@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Lobby, Player, ActivePrompt } from "@/lib/types";
@@ -26,6 +27,7 @@ export function DrinkPromptModal({
   onGinoSwap,
 }: DrinkPromptModalProps) {
   const supabase = createClient();
+  const [isProcessing, setIsProcessing] = useState(false);
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const confirmedPlayers = activePrompt.confirmed_players || [];
   const drinkPlayers = Array.isArray(activePrompt.data?.players)
@@ -46,7 +48,8 @@ export function DrinkPromptModal({
   const canUseNonBinaryPass = isNonBinary && isGenderCard && nonBinaryPassCount < 4;
 
   async function handleDoneDrinking() {
-    if (!lobby || !currentPlayer) return;
+    if (!lobby || !currentPlayer || isProcessing) return;
+    setIsProcessing(true);
 
     const newConfirmedPlayers = [...confirmedPlayers, currentPlayer.name];
     const allDone = drinkPlayers.every((name) =>
@@ -117,7 +120,8 @@ export function DrinkPromptModal({
   }
 
   async function handleNonBinaryPass() {
-    if (!lobby || !currentPlayer) return;
+    if (!lobby || !currentPlayer || isProcessing) return;
+    setIsProcessing(true);
 
     const passes = lobby?.non_binary_passes || {};
     const passCount = passes[currentPlayer.name] || 0;
@@ -564,7 +568,8 @@ export function DrinkPromptModal({
           <div className="flex flex-col gap-4 mt-6">
             <Button
               onClick={handleDoneDrinking}
-              className="bg-white hover:bg-gray-100 text-black font-bold py-4 px-12 rounded-lg text-xl transition-all"
+              disabled={isProcessing}
+              className="bg-white hover:bg-gray-100 disabled:bg-gray-400 text-black font-bold py-4 px-12 rounded-lg text-xl transition-all"
             >
               Done Drinking
             </Button>
@@ -572,7 +577,8 @@ export function DrinkPromptModal({
             {canUseNonBinaryPass && (
               <Button
                 onClick={handleNonBinaryPass}
-                className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-12 rounded-lg text-xl transition-all"
+                disabled={isProcessing}
+                className="bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 text-white font-bold py-4 px-12 rounded-lg text-xl transition-all"
               >
                 ⚧️ PASS ({4 - nonBinaryPassCount}/4 remaining)
               </Button>

@@ -942,28 +942,28 @@ function GamePage() {
         // Always trigger card action after drawing
         await handleCardAction(rank, card.code, currentPlayer.name, currentPlayerIndex);
         
-        // If subscription isn't ready yet, force an immediate reload to ensure sync
-        if (!subscriptionReady) {
-          console.log("[FIRST CARD] Subscription not ready, forcing immediate reload");
-          setTimeout(async () => {
-            const { data: freshLobby } = await supabase
-              .from("lobbies")
-              .select("*")
-              .eq("id", lobby.id)
-              .single();
-            if (freshLobby) {
-              setLobby(freshLobby as Lobby);
-            }
-            const { data: freshPlayers } = await supabase
-              .from("players")
-              .select("*")
-              .eq("lobby_id", lobby.id)
-              .order("joined_at", { ascending: true });
-            if (freshPlayers) {
-              setPlayers(freshPlayers as Player[]);
-            }
-          }, 500); // Small delay to ensure DB writes complete
-        }
+        // Force an immediate reload after first card to ensure sync
+        // This handles the case where subscription might not catch the first broadcast
+        console.log("[CARD DRAWN] Subscription ready:", subscriptionReady);
+        setTimeout(async () => {
+          console.log("[CARD DRAWN] Forcing reload to ensure all players see the update");
+          const { data: freshLobby } = await supabase
+            .from("lobbies")
+            .select("*")
+            .eq("id", lobby.id)
+            .single();
+          if (freshLobby) {
+            setLobby(freshLobby as Lobby);
+          }
+          const { data: freshPlayers } = await supabase
+            .from("players")
+            .select("*")
+            .eq("lobby_id", lobby.id)
+            .order("joined_at", { ascending: true });
+          if (freshPlayers) {
+            setPlayers(freshPlayers as Player[]);
+          }
+        }, 800); // Delay to ensure DB writes complete and broadcast propagates
     } catch (err) {
       console.error("Error drawing card:", err);
       showToast("Failed to draw card. Please try again.", "error");

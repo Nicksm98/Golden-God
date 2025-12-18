@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Player } from "@/lib/types";
@@ -288,6 +288,11 @@ export function WordGameModal({
   const supabase = createClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Reset processing state when the current player changes
+  useEffect(() => {
+    setIsProcessing(false);
+  }, [wordGame.currentPlayerIndex]);
+
   // Safety check - should never happen due to conditional rendering, but prevents race conditions
   if (!wordGame) return null;
 
@@ -376,6 +381,7 @@ export function WordGameModal({
       );
       if (isRepeat) {
         alert('That word was already used! Try again or click "I Don\'t Know"');
+        setIsProcessing(false); // Reset processing state so they can try again
         return;
       }
     }
@@ -386,6 +392,7 @@ export function WordGameModal({
       );
       if (isRepeat) {
         alert('That answer was already used! Try again or click "I Don\'t Know"');
+        setIsProcessing(false); // Reset processing state so they can try again
         return;
       }
     }
@@ -410,6 +417,9 @@ export function WordGameModal({
         },
       })
       .eq("id", lobbyId);
+    
+    // Reset processing state after successful submission
+    setIsProcessing(false);
   };
 
   const handleCantAnswer = async () => {
